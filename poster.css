@@ -1,0 +1,80 @@
+/* 长图（750px 宽）样式，仅作用于 #poster 内部 */
+#poster{font-size:26px}
+#poster .pp{padding:0 44px}
+
+/* 顶部 */
+#poster .phead{background:#e8443a;color:#fff;padding:52px 44px 46px;text-align:center}
+#poster .pbrand{font-size:20px;letter-spacing:.22em;opacity:.82;margin-bottom:26px}
+#poster .plab{font-size:23px;letter-spacing:.2em;opacity:.85;margin-bottom:12px}
+#poster .pname{font-size:58px;font-weight:700;letter-spacing:-1px;line-height:1.22}
+#poster .psub{font-size:22px;opacity:.9;margin-top:16px;line-height:1.6}
+#poster .pflag{display:inline-block;margin-top:22px;border:1.5px solid rgba(255,255,255,.55);border-radius:999px;padding:7px 22px;font-size:20px}
+
+/* 卡片 */
+#poster .pcard{background:#fff;margin:22px 24px 0;border-radius:20px;padding:34px 32px}
+#poster .pcard.first{margin-top:-26px}
+#poster .pst{font-size:19px;font-weight:700;letter-spacing:.1em;color:#e8443a;margin-bottom:18px}
+#poster .ptxt{color:#454c56;line-height:1.82}
+#poster .pcard p{margin:0 0 16px;color:#454c56;line-height:1.82}
+#poster .pcard p:last-child{margin-bottom:0}
+#poster .pcard b{color:#1c2026}
+
+/* 雷达 */
+#poster .pradarwrap{padding:6px 0 2px;text-align:center}
+#poster .pradar{display:block;margin:0 auto}
+
+/* 图例 */
+#poster .pleg{display:flex;flex-wrap:wrap;margin:14px -8px 0}
+#poster .plegi{width:50%;padding:0 8px;margin-bottom:18px}
+#poster .plegt{display:flex;align-items:baseline;font-size:22px;font-weight:600}
+#poster .plegd{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:9px;flex:0 0 auto}
+#poster .plegn{flex:1}
+#poster .plegv{font-weight:700;color:#454c56}
+#poster .plegb{height:8px;background:#eef1f5;border-radius:99px;margin-top:9px;overflow:hidden}
+#poster .plegb i{display:block;height:100%;border-radius:99px}
+#poster .plegs{font-size:17px;color:#8b929c;margin-top:7px;line-height:1.5}
+
+/* 指数 */
+#poster .pidx{margin-top:14px;background:#f5f6f8;border-radius:16px;padding:20px 22px}
+#poster .pidxt{display:flex;justify-content:space-between;align-items:baseline;font-size:21px;color:#7b848f;margin-bottom:11px}
+#poster .pidxt b{color:#1c2026;font-size:26px}
+#poster .pidxb{height:11px;background:#e5e8ee;border-radius:99px;overflow:hidden}
+#poster .pidxb i{display:block;height:100%;background:linear-gradient(90deg,#f09595,#e8443a);border-radius:99px}
+#poster .pidxn{font-size:19px;color:#7b848f;margin-top:12px;line-height:1.7}
+
+/* 定义句 */
+#poster .pdef{background:#fdeceb;margin:22px 24px 0;border-radius:20px;padding:34px 32px;font-size:32px;font-weight:700;color:#791f1f;line-height:1.6}
+
+/* 组合 */
+#poster .pcombo{margin:22px 24px 0;background:#fff;border-radius:20px;padding:32px}
+#poster .pcombo .ct{font-size:26px;font-weight:700;margin-bottom:10px}
+#poster .pcombo .cd{font-size:23px;color:#454c56;line-height:1.8}
+
+/* 依据 */
+#poster .pthy{background:#eaf1fe;border-radius:14px;padding:18px 20px;margin-top:6px;font-size:21px;color:#0c447c;line-height:1.8}
+#poster .pthy b{color:#042c53}
+
+/* 列表 */
+#poster .plist{margin:0;padding-left:30px;color:#454c56}
+#poster .plist li{margin-bottom:14px;line-height:1.82}
+#poster .plist li:last-child{margin-bottom:0}
+#poster .pfix{list-style:none;padding:0;margin:0}
+#poster .pfix li{display:flex;align-items:flex-start;margin-bottom:18px;line-height:1.8;color:#454c56}
+#poster .pfix li:last-child{margin-bottom:0}
+#poster .pfix .cb{flex:0 0 24px;height:24px;border-radius:7px;border:2px solid #cdd3db;margin-right:14px;margin-top:8px;position:relative}
+#poster .pfix li.on .cb{background:#e8443a;border-color:#e8443a}
+#poster .pfix li.on .cb:after{content:'';position:absolute;left:7px;top:2px;width:6px;height:13px;border:solid #fff;border-width:0 3px 3px 0;transform:rotate(42deg)}
+#poster .pfix li.on .tx{color:#9aa2ac;text-decoration:line-through}
+#poster .pfix .tx{flex:1}
+
+/* 金句 */
+#poster .plast{background:#fdeceb;margin:22px 24px 0;border-radius:20px;padding:34px 32px;font-size:31px;font-weight:700;color:#791f1f;line-height:1.62}
+
+/* 免责 */
+#poster .pdisc{font-size:17px;color:#8b929c;line-height:1.8;text-align:center;padding:26px 44px 0}
+
+/* 页脚 */
+#poster .pfoot{margin:26px 24px 34px;background:#1c2026;border-radius:20px;padding:30px 32px;color:#fff;text-align:center}
+#poster .pfoot .f1{font-size:25px;font-weight:700;letter-spacing:.03em}
+#poster .pfoot .f2{font-size:19px;color:rgba(255,255,255,.66);margin-top:12px;line-height:1.75}
+#poster .pfoot .f3{font-size:21px;color:#ffd9a8;margin-top:16px;font-weight:600;line-height:1.7}
