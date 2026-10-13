@@ -87,10 +87,51 @@
     html += '<div class="pfoot">'
       + '<div class="f1">' + esc(cfg.quizTitle || '你现在的累，是哪一种累？') + '</div>'
       + '<div class="f2">出自「' + esc(cfg.shopName || '') + '」<br>18 题 · 6 个维度 · 7 种结果</div>'
+      + '<div class="pqr">'
+      + '<canvas id="p-qr" class="pqrc"></canvas>'
+      + '<div class="pqrt">扫码打开测评<br>拍下自动发货，输密码就能测</div>'
+      + '</div>'
       + (kefu ? '<div class="f3">想测自己的？联系客服微信：' + esc(kefu) + '</div>' : '')
       + '</div>';
 
     return html;
+  }
+
+  /* 二维码：模块矩阵来自 vendor/qr.js（由 _quiz_tests/_gen_qr.py 生成）。
+     必须用 canvas 手绘，不能用 <img>：
+       · 外链图片会让 html2canvas 导出时污染 canvas，toDataURL 直接抛异常；
+       · 内联 SVG 虽然同源，但 html2canvas 走的是自己的序列化路径，容易糊边。
+     整数倍格子 + 矩阵自带 2 格静默区，保证缩到小尺寸也扫得出来。 */
+  function drawQR() {
+    var cv = document.getElementById('p-qr');
+    var box = document.querySelector('#poster .pqr');
+    var q = w.QR;
+
+    if (!cv) return;
+    if (!q || !q.matrix || !q.size || q.matrix.length !== q.size * q.size) {
+      /* 拿不到矩阵就整块不印 —— 宁可不出现，也不要印一个扫不出来的方块 */
+      if (box) box.style.display = 'none';
+      return;
+    }
+
+    var CELL = 5;                            /* 每格 5 CSS px */
+    var PX = q.size * CELL;                  /* 37 × 5 = 185px */
+    var dpr = 2;
+    cv.width = PX * dpr; cv.height = PX * dpr;
+    cv.style.width = PX + 'px'; cv.style.height = PX + 'px';
+
+    var ctx = cv.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, PX, PX);
+    ctx.fillStyle = '#111111';
+    for (var i = 0; i < q.size; i++) {
+      for (var j = 0; j < q.size; j++) {
+        if (q.matrix.charCodeAt(i * q.size + j) === 49 /* '1' */) {
+          ctx.fillRect(j * CELL, i * CELL, CELL, CELL);
+        }
+      }
+    }
   }
 
   /* 渲染成 dataURL（PNG） */
@@ -114,6 +155,7 @@
     var ctx = cv.getContext('2d');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     QZ.drawRadarCanvas(ctx, an.scores, CW, CH, {});
+    drawQR();
 
     var H = node.offsetHeight || 4000;
     var maxArea = 9.2e6;                      /* 兼容 iOS 的 canvas 面积上限 */

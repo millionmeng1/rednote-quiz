@@ -78,3 +78,10 @@
 #poster .pfoot .f1{font-size:25px;font-weight:700;letter-spacing:.03em}
 #poster .pfoot .f2{font-size:19px;color:rgba(255,255,255,.66);margin-top:12px;line-height:1.75}
 #poster .pfoot .f3{font-size:21px;color:#ffd9a8;margin-top:16px;font-weight:600;line-height:1.7}
+
+/* 页脚二维码：白底方块放在深色页脚里，是这张长图唯一的「可扫入口」。
+   尺寸 37 格 × 5px = 185px；导出时按 1.5 倍缩放 → 每格约 7.5px，手机上足够扫。
+   改小只会让它扫不出来，不要低于 4px/格。 */
+#poster .pqr{margin-top:22px;display:flex;flex-direction:column;align-items:center}
+#poster .pqrc{display:block;border-radius:12px;background:#fff}
+#poster .pqrt{font-size:19px;color:rgba(255,255,255,.82);line-height:1.7;margin-top:14px}
