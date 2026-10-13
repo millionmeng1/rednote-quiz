@@ -195,7 +195,12 @@
       + '<h2>请输入测试密码</h2>'
       + '<p class="tip">密码在商品详情页 / 客服消息里，已购买的订单会自动发货。一个密码可以完整测试一次。</p>'
       + (SB_PROBLEM
-        ? '<div class="msg err" style="margin:0 0 12px">' + esc(SB_PROBLEM) + '若持续出现，请点下面的微信号联系我们。</div>'
+        ? '<div class="msg err" style="margin:0 0 12px">' + esc(SB_PROBLEM)
+          /* 客服号能显示时才让买家「点下面的微信号」——后端完全取不到配置时
+             那个入口是隐藏的，指过去等于指了个空；SB_PROBLEM 本身已带收尾话术，
+             这种情况不再追加，免得「请联系店主」连着说两遍。 */
+          + (CFG.kefuWechat ? '若持续出现，请点下面的微信号联系我们。' : '')
+          + '</div>'
         : '')
       + '<div class="pin"><input id="pwd" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="例如 LEI-8F3K-2M9Q" maxlength="24"></div>'
       + '<button class="btn" id="goBtn">验证并开始</button>'
