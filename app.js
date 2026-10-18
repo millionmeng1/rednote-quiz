@@ -618,6 +618,8 @@
     var kefuBtn = hasKefu()
       ? '<button class="btn line" id="cpKefu" type="button">联系客服</button>'
       : '';
+    /* 后台还没填客服号时，总得给买家一个去处，别让第三步落空 */
+    var kefuNote = hasKefu() ? '' : '<p style="font-size:12.5px;color:#7b848f;margin-top:10px">客服微信由店铺另行提供，见商品详情页。</p>';
     var d = document.createElement('div');
     d.className = 'mask';
     d.innerHTML = '<div class="modal">'
@@ -631,6 +633,7 @@
       + '<li>把截图发给客服。</li>'
       + '</ol>'
       + kefuBtn
+      + kefuNote
       + '<p style="font-size:12.5px;color:#7b848f;margin-top:10px">客服确认截图后，返现一般会在 24 小时内发出。感谢你的支持。</p>'
       + '<button class="btn" id="mclose">知道了</button></div>';
     document.body.appendChild(d);
