@@ -227,6 +227,9 @@ function tryLogin(){
  var v=($('keyInput').value||'').trim().toUpperCase();
  if(!v){$('loginMsg').textContent='请输入管理密钥。';return;}
  KEY=v;
+ /* 先给一句即时反馈：首次连数据库要过 DNS + TLS，慢网络下能到 2 秒，
+    没这句话店主点了会以为没反应，然后狂点。 */
+ $('loginMsg').textContent='正在验证…';
  api('/api/admin/state').then(function(r){
    if(r&&r.ok){try{localStorage.setItem(KEY_STORE,KEY);}catch(e){}
      $('loginBox').classList.add('hide');$('mainBox').classList.remove('hide');apply(r);}
