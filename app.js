@@ -457,10 +457,15 @@
   function renderActbar() {
     var bar = $('actbar');
     if (S.mode === 'shared') {
+      /* 扫码进来的人多半是「看了朋友的结果、想测自己」—— 这一步是唯一的转化口，
+         所以有购买链接时把它做成主按钮（金色），「我也要测」退成次要按钮。 */
       bar.innerHTML = '<div class="innercol">'
-        + (CFG.buyUrl ? '<a class="barbuy" href="' + esc(CFG.buyUrl) + '" target="_blank" rel="noopener">'
-          + esc(CFG.buyText || '还没有测试密码？到店铺下单后自动发货') + '</a>' : '')
-        + '<div class="inner"><button class="btn" id="ctaBtn">我也要测一下我的 →</button></div>'
+        + (CFG.buyUrl
+            ? '<a class="btn gold" style="text-decoration:none;display:block;text-align:center" '
+              + 'href="' + esc(CFG.buyUrl) + '" target="_blank" rel="noopener">'
+              + esc(CFG.buyText || '去小红书下单，自动发货') + '</a>'
+            : '<div class="barbuy">想测自己的，到小红书搜「' + esc(CFG.shopName || '疲惫类型自测') + '」</div>')
+        + '<div class="inner"><button class="btn line" id="ctaBtn">我也要测一下我的 →</button></div>'
         + '</div>';
       bar.classList.remove('hide');
       $('ctaBtn').onclick = function () {
@@ -734,7 +739,8 @@
       S.an = QZ.analyze(S.answers);
       $('view-result').innerHTML =
         '<div class="brand">' + esc(CFG.shopName || '疲惫类型自测') + '</div>'
-        + '<div class="sharedtag">这是一份朋友分享给你的测评结果 —— 完整结果页，往下看就能看到 TA 的分析。</div>'
+        + '<div class="sharedtag">这是一份朋友分享给你的测评结果 —— 往下看就能看到 TA 的完整分析。'
+        + '<br>想测自己的？点下面的按钮去小红书拍一份，付款后自动发货。</div>'
         + resultHTML(S.an, 'shared');
       show('view-result');
       renderActbar();
