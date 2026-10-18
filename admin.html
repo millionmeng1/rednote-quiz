@@ -107,7 +107,7 @@ code.k{background:#f1f3f6;border-radius:5px;padding:1px 5px;font-family:ui-monos
         <div><label>搜索（密码 / 批次 / 备注）</label><input type="text" id="qInput" placeholder="输入关键词"></div>
         <div><label>筛选</label>
           <select id="fSelect" style="width:100%;padding:11px 13px;border:1.5px solid var(--line);border-radius:11px;font-size:14px;font-family:inherit;background:#fbfcfd">
-            <option value="all">全部</option><option value="unused">只看未使用</option><option value="used">只看已开始</option><option value="done">只看已完成</option>
+            <option value="all">全部</option><option value="unused">只看未使用</option><option value="used">只看已开始</option><option value="done">只看已完成</option><option value="perm">只看永久密码</option>
           </select></div>
       </div>
       <div class="tblwrap">
@@ -273,13 +273,17 @@ function renderTable(){
    if(f==='done'&&!c.resultAt)return false;
    if(f==='used'&&!c.usedAt)return false;
    if(f==='unused'&&c.usedAt)return false;
+   if(f==='perm'&&!c.unlimited)return false;
    if(!q)return true;
    return (c.code+' '+(c.batch||'')+' '+(c.note||'')).toLowerCase().indexOf(q)>=0;
  });
  var h='';
  if(!list.length)h='<tr><td colspan="7" style="color:#7b848f;padding:18px">没有匹配的密码</td></tr>';
  list.slice(0,800).forEach(function(c){
-   var badge=c.resultAt?'<span class="badge d">已完成</span>':(c.usedAt?'<span class="badge u">答题中</span>':'<span class="badge f">未使用</span>');
+   /* 永久密码永远显示「永久」，别让店主误当成没卖出的库存发给买家 */
+   var badge=c.unlimited
+     ?'<span class="badge" style="background:#fff4d6;color:#8a5a00;border-color:#f0d089">永久</span>'
+     :(c.resultAt?'<span class="badge d">已完成</span>':(c.usedAt?'<span class="badge u">答题中</span>':'<span class="badge f">未使用</span>'));
    h+='<tr><td><code>'+esc(c.code)+'</code></td>'
     +'<td>'+badge+'</td>'
     +'<td>'+esc(c.batch||'—')+'</td><td>'+esc(c.note||'—')+'</td>'
