@@ -172,14 +172,16 @@
     return '<div class="buytip"><a href="' + esc(CFG.buyUrl) + '" target="_blank" rel="noopener">'
       + esc(CFG.buyText || '还没有测试密码？到店铺下单后自动发货') + '</a></div>';
   }
+  /* 客服入口：只给「联系客服」这个动作，不在页面上直接印微信号。
+     买家点一下就把号复制走（手机上是长按复制的兜底提示），页面本身不暴露号码。 */
   function kefuHTML() {
     if (!hasKefu()) return '';
-    return '<div class="buytip dim">买过了但找不到密码？联系客服 <b>' + esc(CFG.kefuWechat) + '</b>'
-      + '<button class="mini" id="kefuCopy" type="button">复制</button></div>';
+    return '<div class="buytip dim">买过了但找不到密码？'
+      + '<button class="mini" id="kefuCopy" type="button">联系客服</button></div>';
   }
   function bindKefu() {
     var b = $('kefuCopy');
-    if (b) b.onclick = function () { copyText(CFG.kefuWechat).then(function (ok) { toast(ok ? '客服微信已复制' : '请手动长按复制'); }); };
+    if (b) b.onclick = function () { copyText(CFG.kefuWechat).then(function (ok) { toast(ok ? '客服微信已复制，去微信添加就能找到我们' : '请长按此处手动复制'); }); };
   }
 
   /* ---------------- 密码入口 ---------------- */
@@ -494,8 +496,9 @@
     var h = '<p>' + esc(msg) + '</p>'
       + '<p>你这次的测评结果还在这一页，随时可以回来看，也可以存成长图带走。</p>';
     if (hasKefu()) {
-      h += '<div class="hl">要新密码就找客服：<b>' + esc(CFG.kefuWechat) + '</b></div>'
-        + '<button class="btn line" id="mKefu2" type="button">复制客服微信</button>';
+      /* 同上：只给动作，不印号码 */
+      h += '<div class="hl">要新的测试密码，找客服要一张就行。</div>'
+        + '<button class="btn line" id="mKefu2" type="button">联系客服</button>';
     } else {
       h += '<p>要新的测试密码，联系店铺客服就行。</p>';
     }
@@ -505,7 +508,7 @@
     }
     openInfoModal('这张密码已经用过啦', h);
     var cb = $('mKefu2');
-    if (cb) cb.onclick = function () { copyText(CFG.kefuWechat).then(function (ok) { toast(ok ? '客服微信已复制' : '请手动长按复制'); }); };
+    if (cb) cb.onclick = function () { copyText(CFG.kefuWechat).then(function (ok) { toast(ok ? '客服微信已复制，去微信粘贴添加' : '请长按此处手动复制'); }); };
   }
 
   /* 保存长图 */
@@ -610,26 +613,24 @@
 
   /* 好评有礼 */
   function openPraise() {
-    var cb = CFG.cashback || '0.5';
-    var kefuRow = hasKefu()
-      ? '<div class="kefu"><div class="k"><div class="kl">客服微信</div><div class="kv">' + esc(CFG.kefuWechat) + '</div></div>'
-        + '<button id="cpKefu">复制</button></div>'
+    var cb = CFG.cashback || '1';
+    /* 弹窗里不再印客服微信号：入口统一走下面那个「联系客服」按钮，点了就复制走。 */
+    var kefuBtn = hasKefu()
+      ? '<button class="btn line" id="cpKefu" type="button">联系客服</button>'
       : '';
-    var kefuNote = hasKefu() ? '' : '<p style="font-size:12.5px;color:#7b848f;margin-top:10px">客服微信由店铺另行提供，见商品详情页。</p>';
     var d = document.createElement('div');
     d.className = 'mask';
     d.innerHTML = '<div class="modal">'
       + '<button class="close">×</button>'
       + '<h3>好评有礼</h3>'
       + '<p>谢谢你愿意测到最后。如果你觉得这个测评对你有一点帮助，欢迎给一个五星好评。</p>'
-      + '<div class="hl">店铺好评后，请联系客服并发送好评截图，即可获得 <b>' + esc(cb) + ' 元</b>返现。</div>'
+      + '<div class="hl">好评后可获得 <b>' + esc(cb) + ' 元</b>返现。</div>'
       + '<ol class="steps">'
       + '<li>回到订单页，点亮五星好评，写一句真实感受；</li>'
       + '<li>把好评页面截图保存；</li>'
-      + '<li>添加店铺客服微信，把截图发过去。</li>'
+      + '<li>把截图发给客服。</li>'
       + '</ol>'
-      + kefuRow
-      + kefuNote
+      + kefuBtn
       + '<p style="font-size:12.5px;color:#7b848f;margin-top:10px">客服确认截图后，返现一般会在 24 小时内发出。感谢你的支持。</p>'
       + '<button class="btn" id="mclose">知道了</button></div>';
     document.body.appendChild(d);
@@ -638,7 +639,7 @@
     d.onclick = function (e) { if (e.target === d) d.parentNode.removeChild(d); };
     var cp = d.querySelector('#cpKefu');
     if (cp) cp.onclick = function () {
-      copyText(CFG.kefuWechat).then(function (ok) { toast(ok ? '客服微信已复制' : '请手动长按复制'); });
+      copyText(CFG.kefuWechat).then(function (ok) { toast(ok ? '客服微信已复制，去微信粘贴添加后发截图' : '请长按此处手动复制'); });
     };
   }
 
