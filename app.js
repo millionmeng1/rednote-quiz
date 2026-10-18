@@ -464,6 +464,10 @@
             ? '<a class="btn gold" style="text-decoration:none;display:block;text-align:center" '
               + 'href="' + esc(CFG.buyUrl) + '" target="_blank" rel="noopener">'
               + esc(CFG.buyText || '去小红书下单，自动发货') + '</a>'
+              /* 小红书的链接在微信里经常被拦（提示「请在小红书 App 打开」），
+                 而扫码进来的人恰恰多半是在微信里。所以主按钮下面必须留一条
+                 「搜店铺名」的退路，别让人点了没反应就走了。 */
+              + '<div class="barbuy">链接打不开？到小红书搜「' + esc(CFG.shopName || '疲惫类型自测') + '」</div>'
             : '<div class="barbuy">想测自己的，到小红书搜「' + esc(CFG.shopName || '疲惫类型自测') + '」</div>')
         + '<div class="inner"><button class="btn line" id="ctaBtn">我也要测一下我的 →</button></div>'
         + '</div>';
