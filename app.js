@@ -242,6 +242,26 @@
       if (r && r.ok && r.token) {
         S.token = r.token; S.authed = true;
         try { localStorage.setItem(K_TOKEN, r.token); } catch (e) { }
+        /* 换手机 / 清过浏览器数据的老买家：服务端认出这张码已经测过，
+           把上一次那份结果原样还回来了。直接进结果页，不再让他答一遍 ——
+           这张码的一次机会已经用掉了，can_retest 那边也会挡住重测。 */
+        if (r.recovered && r.answers && r.answers.length === N) {
+          try { localStorage.removeItem(K_PROG); } catch (e) { }
+          S.mode = 'own';
+          S.answers = r.answers.slice();
+          S.an = QZ.analyze(S.answers);
+          S.share = r.share || null;
+          S.resultAt = r.resultAt || null;
+          S.checked = {};
+          saveResult();
+          msg.className = 'msg ok'; msg.textContent = '找到了你上次的结果';
+          history.replaceState(null, '', '#/result');
+          setTimeout(function () {
+            renderResult();
+            toast('这是你上次测的结果 —— 一个密码只能测一次，想再测需要新的密码', 3600);
+          }, 320);
+          return;
+        }
         try { localStorage.removeItem(K_RESULT); } catch (e) { }
         msg.className = 'msg ok'; msg.textContent = '验证通过，正在进入…';
         setTimeout(showLanding, 320);
