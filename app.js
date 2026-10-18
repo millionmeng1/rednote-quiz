@@ -496,6 +496,10 @@
 
     if (mode === 'own') {
       h += '<button class="btn ghost sm" id="retestBtn">再测一次</button>';
+      /* 换码入口：一张码只能测一次，想再测就得有新密码 —— 这是「退出登录」，
+         不是「重来一次」。店主自己验收时也靠它回到输密码那一步，不用清浏览器数据。 */
+      h += '<div class="switchrow">给家人朋友测、或者手上还有一张新密码？'
+        + '<button class="mini" id="switchBtn" type="button">换个密码</button></div>';
     }
     return h;
   }
@@ -528,6 +532,8 @@
     }
     var rb = $('retestBtn');
     if (rb) rb.onclick = retest;
+    var sb = $('switchBtn');
+    if (sb) sb.onclick = switchCode;
 
     renderActbar();
   }
@@ -586,6 +592,23 @@
       }
       showRetestBlocked((r && r.message) || '这个密码已经完成过一次测试了。');
     });
+  }
+
+  /* 换个密码：退出这次登录，回到输密码那一步。
+     只清凭证，不清本地那份结果 —— 同一个人重新输同一张码还能把结果取回来，
+     而换了新密码的人则是一张全新的机会。（这里不做任何「重来一次」的口子：
+     能不能再测，永远由服务端那张码说了算。） */
+  function switchCode() {
+    try {
+      localStorage.removeItem(K_TOKEN);
+      localStorage.removeItem(K_UNL);
+      localStorage.removeItem(K_PROG);
+    } catch (e) { }
+    S.token = null; S.authed = false; S.resultAt = null; S.unlimited = false;
+    S.idx = 0; S.an = null; S.share = null; S.answers = new Array(N).fill(0);
+    history.replaceState(null, '', '#/');
+    showGate();
+    toast('已退出这次登录 —— 输入新的密码就能再测');
   }
 
   function showRetestBlocked(msg) {
