@@ -78,11 +78,12 @@
 
     html += '<div class="pdisc">' + esc(QD.DISCLAIMER).replace(/\n/g, '<br>') + '</div>';
 
-    /* 客服号必须判定成「真的填了」才印上去。长图是被分享得最多的东西，
-       一旦把「请到管理后台填写客服微信号」这种占位符印上去，就等于当着买家的面
-       暴露后台。app.js 里的 hasKefu() 用的是同一套判断。 */
-    var kefu = (cfg.kefuWechat && String(cfg.kefuWechat).indexOf('请到管理后台') < 0)
-      ? String(cfg.kefuWechat) : '';
+    /* 长图是被转发得最多的东西，上面**不印任何微信号**：
+       一是微信号出现在外发素材上有被平台限流的风险，二是买家本来就是在
+       小红书店铺下的单，指回站内比指去微信更顺、也更安全。
+       所以这里只留店铺名，让人知道去小红书搜谁。 */
+    var shop = cfg.shopName && String(cfg.shopName).indexOf('请到管理后台') < 0
+      ? String(cfg.shopName) : '';
 
     html += '<div class="pfoot">'
       + '<div class="f1">' + esc(cfg.quizTitle || '你现在的累，是哪一种累？') + '</div>'
@@ -91,7 +92,7 @@
       + '<canvas id="p-qr" class="pqrc"></canvas>'
       + '<div class="pqrt">扫码打开测评<br>拍下自动发货，输密码就能测</div>'
       + '</div>'
-      + (kefu ? '<div class="f3">想测自己的？联系客服微信：' + esc(kefu) + '</div>' : '')
+      + (shop ? '<div class="f3">想测自己的？去小红书搜「' + esc(shop) + '」</div>' : '')
       + '</div>';
 
     return html;

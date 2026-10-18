@@ -172,8 +172,18 @@
     return '<div class="buytip"><a href="' + esc(CFG.buyUrl) + '" target="_blank" rel="noopener">'
       + esc(CFG.buyText || '还没有测试密码？到店铺下单后自动发货') + '</a></div>';
   }
-  /* 客服入口：只给「联系客服」这个动作，不在页面上直接印微信号。
-     买家点一下就把号复制走（手机上是长按复制的兜底提示），页面本身不暴露号码。 */
+  /* 客服入口：买家是在小红书店铺下的单，客服就在小红书里。
+     这里不再给微信号、也不再复制任何东西 —— 只告诉他去哪儿找人。
+     带一句站内路径，是因为大部分人不知道订单页里就有客服入口。 */
+  var KEFU_GUIDE =
+      '<p>你是在小红书下的单，找客服直接在小红书里就行：</p>'
+    + '<ol class="steps">'
+    + '<li>打开小红书 App → 右下角「我」；</li>'
+    + '<li>「我的订单」→ 找到这一单，点进去；</li>'
+    + '<li>右上角或订单详情里有「联系客服」，直接说就行。</li>'
+    + '</ol>'
+    + '<div class="box"><p>密码、发货、返现，都能在那里一次问清楚，不用加微信。</p></div>';
+
   function kefuHTML() {
     if (!hasKefu()) return '';
     return '<div class="buytip dim">买过了但找不到密码？'
@@ -181,7 +191,7 @@
   }
   function bindKefu() {
     var b = $('kefuCopy');
-    if (b) b.onclick = function () { copyText(CFG.kefuWechat).then(function (ok) { toast(ok ? '客服微信已复制，去微信添加就能找到我们' : '请长按此处手动复制'); }); };
+    if (b) b.onclick = function () { openInfoModal('怎么联系客服', KEFU_GUIDE); };
   }
 
   /* ---------------- 密码入口 ---------------- */
@@ -195,13 +205,12 @@
       + '<div class="facts"><span class="fact">18 道题 · 约 3 分钟</span><span class="fact">6 个维度 · 7 种结果</span><span class="fact">每种累附恢复处方</span></div>'
       + '<div class="gate">'
       + '<h2>请输入测试密码</h2>'
-      + '<p class="tip">密码在商品详情页 / 客服消息里，已购买的订单会自动发货。一个密码可以完整测试一次。</p>'
+      + '<p class="tip">密码在商品详情页 / 小红书订单消息里，已购买的订单会自动发货。一个密码可以完整测试一次。</p>'
       + (SB_PROBLEM
         ? '<div class="msg err" style="margin:0 0 12px">' + esc(SB_PROBLEM)
-          /* 客服号能显示时才让买家「点下面的微信号」——后端完全取不到配置时
-             那个入口是隐藏的，指过去等于指了个空；SB_PROBLEM 本身已带收尾话术，
-             这种情况不再追加，免得「请联系店主」连着说两遍。 */
-          + (CFG.kefuWechat ? '若持续出现，请点下面的微信号联系我们。' : '')
+          /* 同上：客服入口是小红书订单页，只有后台确实配了客服才补这一句，
+             免得「请联系店主」和 SB_PROBLEM 自带的收尾话术连着说两遍。 */
+          + (CFG.kefuWechat ? '若持续出现，可以在小红书订单里联系店铺客服。' : '')
           + '</div>'
         : '')
       + '<div class="pin"><input id="pwd" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="例如 LEI-8F3K-2M9Q" maxlength="24"></div>'
@@ -496,11 +505,10 @@
     var h = '<p>' + esc(msg) + '</p>'
       + '<p>你这次的测评结果还在这一页，随时可以回来看，也可以存成长图带走。</p>';
     if (hasKefu()) {
-      /* 同上：只给动作，不印号码 */
-      h += '<div class="hl">要新的测试密码，找客服要一张就行。</div>'
-        + '<button class="btn line" id="mKefu2" type="button">联系客服</button>';
+      h += '<div class="hl">要新的测试密码，去小红书订单里找客服要一张就行。</div>'
+        + '<button class="btn line" id="mKefu2" type="button">怎么联系客服</button>';
     } else {
-      h += '<p>要新的测试密码，联系店铺客服就行。</p>';
+      h += '<p>要新的测试密码，在小红书订单里联系店铺客服就行。</p>';
     }
     if (CFG.buyUrl) {
       h += '<a class="btn gold" id="mBuy2" href="' + esc(CFG.buyUrl) + '" target="_blank" rel="noopener"'
@@ -508,7 +516,7 @@
     }
     openInfoModal('这张密码已经用过啦', h);
     var cb = $('mKefu2');
-    if (cb) cb.onclick = function () { copyText(CFG.kefuWechat).then(function (ok) { toast(ok ? '客服微信已复制，去微信粘贴添加' : '请长按此处手动复制'); }); };
+    if (cb) cb.onclick = function () { openInfoModal('怎么联系客服', KEFU_GUIDE); };
   }
 
   /* 保存长图 */
@@ -536,25 +544,52 @@
     });
   }
 
-  /* 长图预览层（手机端） */
+  /* 长图预览层（手机端）
+     —— 之前只有「长按保存」一条路，而 iOS Safari 对超长 data: 地址的图经常
+        弹不出「存储到照片」，点了以为存了其实没存。现在三条路都给：
+        ①「保存到相册」按钮（走 a[download]）；② 长按图片；③ 发给朋友。
+        图片地址也从 dataURL 换成 blob: —— 长按菜单稳定得多。 */
   function openPreview(url, name) {
     var canShare = !isWeChat && typeof navigator.canShare === 'function' && typeof File === 'function';
+    var isIOS = /iPhone|iPad|iPod/i.test(ua);
+
+    var showUrl = url, objectUrl = null;
+    try {
+      objectUrl = URL.createObjectURL(PO.dataURLtoBlob(url));
+      showUrl = objectUrl;
+    } catch (e) { /* 拿不到 blob 就退回 dataURL，不影响后面的路 */ }
+
     var hint = isWeChat
-      ? '在微信中：长按下面这张图 → 选择「保存图片」<br>想发给朋友，点右上角「···」即可'
-      : (isMobile ? '长按图片 → 保存到相册' : '右键图片 → 图片另存为');
+      ? '微信里请长按下面这张图 →「保存图片」'
+      : '点上面的「保存到相册」；没反应就长按图片 →「保存图片」';
+    var where = isIOS
+      ? 'iPhone：长按存的会进「照片」；用按钮存的可能只进「文件 → 下载」。'
+      : '安卓：一般直接进相册，也可能在「文件管理 → 下载」。';
 
     var d = document.createElement('div');
     d.className = 'pv';
     d.innerHTML =
       '<div class="pvtop">'
-      + '<div class="t"><b>结果长图已生成</b><span>' + (isWeChat ? '长按图片即可保存' : '保存到相册或直接分享') + '</span></div>'
-      + (canShare ? '<button id="pvShare">存到相册</button>' : '')
+      + '<div class="t"><b>结果长图已生成</b><span>' + (isWeChat ? '长按图片即可保存' : '存到相册或直接分享') + '</span></div>'
+      + '<button id="pvSave">保存到相册</button>'
+      + (canShare ? '<button id="pvShare">发给朋友</button>' : '')
       + '<button id="pvClose">关闭</button>'
       + '</div>'
-      + '<div class="pvbody"><img src="' + url + '" alt="我的测评结果长图">'
-      + '<div class="hint">' + hint + '</div></div>';
+      + '<div class="pvbody"><img src="' + showUrl + '" alt="我的测评结果长图">'
+      + '<div class="hint">' + hint + '<br>' + where + '</div></div>';
     document.body.appendChild(d);
-    d.querySelector('#pvClose').onclick = function () { d.parentNode.removeChild(d); };
+
+    function close() {
+      if (d.parentNode) d.parentNode.removeChild(d);
+      if (objectUrl) { try { URL.revokeObjectURL(objectUrl); } catch (e) { } }
+    }
+    d.querySelector('#pvClose').onclick = close;
+
+    d.querySelector('#pvSave').onclick = function () {
+      download(showUrl, name);
+      toast(isIOS ? '已保存，去「照片」或「文件 → 下载」看看' : '已保存，去相册或「下载」里看看');
+    };
+
     if (canShare) {
       d.querySelector('#pvShare').onclick = function () {
         try {
@@ -564,9 +599,9 @@
             navigator.share({ files: [file], title: '我的疲惫类型', text: '我测出来的累是「' + S.an.title + '」' })
               .catch(function () { });
           } else {
-            download(url, name);
+            download(showUrl, name);
           }
-        } catch (e) { download(url, name); }
+        } catch (e) { download(showUrl, name); }
       };
     }
   }
@@ -614,12 +649,11 @@
   /* 好评有礼 */
   function openPraise() {
     var cb = CFG.cashback || '1';
-    /* 弹窗里不再印客服微信号：入口统一走下面那个「联系客服」按钮，点了就复制走。 */
+    /* 同上：不发微信号，只给小红书里的找人路径 */
     var kefuBtn = hasKefu()
-      ? '<button class="btn line" id="cpKefu" type="button">联系客服</button>'
+      ? '<button class="btn line" id="cpKefu" type="button">怎么联系客服</button>'
       : '';
-    /* 后台还没填客服号时，总得给买家一个去处，别让第三步落空 */
-    var kefuNote = hasKefu() ? '' : '<p style="font-size:12.5px;color:#7b848f;margin-top:10px">客服微信由店铺另行提供，见商品详情页。</p>';
+    var kefuNote = hasKefu() ? '' : '<p style="font-size:12.5px;color:#7b848f;margin-top:10px">在小红书订单里就能找到店铺客服。</p>';
     var d = document.createElement('div');
     d.className = 'mask';
     d.innerHTML = '<div class="modal">'
@@ -630,7 +664,7 @@
       + '<ol class="steps">'
       + '<li>回到订单页，点亮五星好评，写一句真实感受；</li>'
       + '<li>把好评页面截图保存；</li>'
-      + '<li>把截图发给客服。</li>'
+      + '<li>回到小红书订单页，把截图发给店铺客服。</li>'
       + '</ol>'
       + kefuBtn
       + kefuNote
@@ -641,9 +675,7 @@
     d.querySelector('#mclose').onclick = function () { d.parentNode.removeChild(d); };
     d.onclick = function (e) { if (e.target === d) d.parentNode.removeChild(d); };
     var cp = d.querySelector('#cpKefu');
-    if (cp) cp.onclick = function () {
-      copyText(CFG.kefuWechat).then(function (ok) { toast(ok ? '客服微信已复制，去微信粘贴添加后发截图' : '请长按此处手动复制'); });
-    };
+    if (cp) cp.onclick = function () { openInfoModal('怎么联系客服', KEFU_GUIDE); };
   }
 
   function openInfoModal(title, bodyHTML) {
