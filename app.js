@@ -168,8 +168,6 @@
     $('shell').classList.toggle('hasbar', id === 'view-result' && S.mode === 'own');
   }
 
-  /* 获取密码 / 客服找回 入口（后台留空则不显示） */
-  function hasKefu() { return !!(CFG.kefuWechat && CFG.kefuWechat.indexOf('请到管理后台') < 0); }
   function buyHTML() {
     if (!CFG.buyUrl) return '';
     return '<div class="buytip"><a href="' + esc(CFG.buyUrl) + '" target="_blank" rel="noopener">'
@@ -188,7 +186,7 @@
     + '<div class="box"><p>密码、发货、返现，都能在那里一次问清楚，不用加微信。</p></div>';
 
   function kefuHTML() {
-    if (!hasKefu()) return '';
+    /* 买家一定是在小红书店铺下的单，客服入口永远存在 —— 不依赖后台有没有填微信号 */
     return '<div class="buytip dim">买过了但找不到密码？'
       + '<button class="mini" id="kefuCopy" type="button">联系客服</button></div>';
   }
@@ -211,10 +209,7 @@
       + '<p class="tip">密码在商品详情页 / 小红书订单消息里，已购买的订单会自动发货。一个密码可以完整测试一次。</p>'
       + (SB_PROBLEM
         ? '<div class="msg err" style="margin:0 0 12px">' + esc(SB_PROBLEM)
-          /* 同上：客服入口是小红书订单页，只有后台确实配了客服才补这一句，
-             免得「请联系店主」和 SB_PROBLEM 自带的收尾话术连着说两遍。 */
-          + (CFG.kefuWechat ? '若持续出现，可以在小红书订单里联系店铺客服。' : '')
-          + '</div>'
+          + '若持续出现，可以在小红书订单里联系店铺客服。</div>'
         : '')
       + '<div class="pin"><input id="pwd" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="例如 LEI-8F3K-2M9Q" maxlength="24"></div>'
       + '<button class="btn" id="goBtn">验证并开始</button>'
@@ -614,12 +609,8 @@
   function showRetestBlocked(msg) {
     var h = '<p>' + esc(msg) + '</p>'
       + '<p>你这次的测评结果还在这一页，随时可以回来看，也可以存成长图带走。</p>';
-    if (hasKefu()) {
-      h += '<div class="hl">要新的测试密码，去小红书订单里找客服要一张就行。</div>'
-        + '<button class="btn line" id="mKefu2" type="button">怎么联系客服</button>';
-    } else {
-      h += '<p>要新的测试密码，在小红书订单里联系店铺客服就行。</p>';
-    }
+    h += '<div class="hl">要新的测试密码，去小红书订单里找客服要一张就行。</div>'
+      + '<button class="btn line" id="mKefu2" type="button">怎么联系客服</button>';
     if (CFG.buyUrl) {
       h += '<a class="btn gold" id="mBuy2" href="' + esc(CFG.buyUrl) + '" target="_blank" rel="noopener"'
         + ' style="margin-top:8px;text-decoration:none">' + esc(CFG.buyText || '去店铺下单，获取新的测试密码') + '</a>';
@@ -760,10 +751,7 @@
   function openPraise() {
     var cb = CFG.cashback || '1';
     /* 同上：不发微信号，只给小红书里的找人路径 */
-    var kefuBtn = hasKefu()
-      ? '<button class="btn line" id="cpKefu" type="button">怎么联系客服</button>'
-      : '';
-    var kefuNote = hasKefu() ? '' : '<p style="font-size:12.5px;color:#7b848f;margin-top:10px">在小红书订单里就能找到店铺客服。</p>';
+    var kefuBtn = '<button class="btn line" id="cpKefu" type="button">怎么联系客服</button>';
     var d = document.createElement('div');
     d.className = 'mask';
     d.innerHTML = '<div class="modal">'
@@ -777,7 +765,6 @@
       + '<li>回到小红书订单页，把截图发给店铺客服。</li>'
       + '</ol>'
       + kefuBtn
-      + kefuNote
       + '<p style="font-size:12.5px;color:#7b848f;margin-top:10px">客服确认截图后，返现一般会在 24 小时内发出。感谢你的支持。</p>'
       + '<button class="btn" id="mclose">知道了</button></div>';
     document.body.appendChild(d);
