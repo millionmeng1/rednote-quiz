@@ -123,9 +123,12 @@
     token: null, answers: new Array(N).fill(0), idx: 0,
     an: null, share: null, link: null, img: null,
     checked: {}, mode: 'own', authed: false,
-    resultAt: null
+    resultAt: null,
+    /* 店主自己的永久测试码：允许反复完整体验（前台唯一豁免） */
+    unlimited: false
   };
   var K_TOKEN = 'lei_token_v1', K_RESULT = 'lei_result_v1', K_PROG = 'lei_prog_v1';
+  var K_UNL = 'lei_unl_v1';
   var PROG_TTL = 6 * 3600 * 1000;
 
   function saveResult() {
@@ -241,6 +244,12 @@
       btn.disabled = false; btn.textContent = '验证并开始';
       if (r && r.ok && r.token) {
         S.token = r.token; S.authed = true;
+        /* 永久码标记要落到本地：刷新页面时也得认得出，否则会被「已出结果」挡在门外 */
+        S.unlimited = r.unlimited === true;
+        try {
+          if (S.unlimited) localStorage.setItem(K_UNL, '1');
+          else localStorage.removeItem(K_UNL);
+        } catch (e) { }
         try { localStorage.setItem(K_TOKEN, r.token); } catch (e) { }
         /* 换手机 / 清过浏览器数据的老买家：服务端认出这张码已经测过，
            把上一次那份结果原样还回来了。直接进结果页，不再让他答一遍 ——
@@ -264,7 +273,28 @@
         }
         try { localStorage.removeItem(K_RESULT); } catch (e) { }
         msg.className = 'msg ok'; msg.textContent = '验证通过，正在进入…';
-        setTimeout(showLanding, 320);
+        /* 重新输一次密码进来的人，前端此刻还不知道这张码出没出过结果 —— 问一次服务端。
+           老版本就是漏了这一步：刚测完 5 分钟内重新登录，redeem 照样放行，
+           于是又能答一遍。这里兜住，不依赖数据库有没有跑最新迁移。 */
+        api('/api/session', { method: 'POST', body: { token: S.token } }).then(function (s) {
+          if (s && s.ok && s.resultAt && !S.unlimited) {
+            S.resultAt = s.resultAt;
+            var cached = readResult();
+            history.replaceState(null, '', '#/result');
+            if (cached) {
+              S.answers = cached.a.slice();
+              S.share = cached.s || null;
+              S.checked = cached.c || {};
+              S.an = QZ.analyze(S.answers);
+              renderResult();
+              toast('这是你上次测的结果 —— 一个密码只能完整测一次', 3600);
+            } else {
+              showLostResult();
+            }
+            return;
+          }
+          setTimeout(showLanding, 320);
+        });
       } else {
         msg.className = 'msg err';
         msg.innerHTML = esc((r && r.message) || '密码验证失败，请检查后重试。');
@@ -276,6 +306,23 @@
   function showLanding() {
     S.mode = 'own';
     $('actbar').classList.add('hide');
+    /* 兜底：正常情况下 redeem 在「已出结果」时会直接把人送去结果页，走不到这里。
+       但多标签页 / 刷新竞态下仍有可能漏进来，这里再挡一次，别把「开始测试」递出去。 */
+    if (S.resultAt && !S.unlimited) {
+      var cached = readResult();
+      if (cached) {
+        S.answers = cached.a.slice();
+        S.share = cached.s || null;
+        S.checked = cached.c || {};
+        S.an = QZ.analyze(S.answers);
+        history.replaceState(null, '', '#/result');
+        renderResult();
+      } else {
+        history.replaceState(null, '', '#/');
+        showLostResult();
+      }
+      return;
+    }
     $('view-landing').innerHTML =
       '<div class="brand">' + esc(CFG.shopName || '疲惫类型自测') + '</div>'
       + '<h1>' + esc(CFG.quizTitle || '你现在的累，是哪一种累？') + '</h1>'
@@ -379,7 +426,18 @@
     api('/api/share', { method: 'POST', body: { token: S.token, answers: S.answers } }).then(function (r) {
       if (r && r.ok && r.share) {
         S.share = r.share;
-        S.resultAt = S.resultAt || new Date().toISOString();
+        S.resultAt = r.resultAt || S.resultAt || new Date().toISOString();
+        /* 服务端说「这张码早就出过结果了」：说明这次是重复提交（绕过了入口硬答的，
+           或者网络慢、点了两次）。把原来那份答案换回来重画 —— 不然页面显示的是
+           他刚瞎选的，而分享链接指向的还是原来那份，长图和链接会对不上。 */
+        if (r.fresh === false && !S.unlimited && r.answers && r.answers.length === N) {
+          S.answers = r.answers.slice();
+          S.an = QZ.analyze(S.answers);
+          saveResult();
+          renderResult();
+          toast('这是你上次测的结果 —— 一个密码只能完整测一次', 3600);
+          return;
+        }
         saveResult();
       }
     });
@@ -781,6 +839,7 @@
 
   function boot() {
     try { S.token = localStorage.getItem(K_TOKEN) || null; } catch (e) { S.token = null; }
+    try { S.unlimited = localStorage.getItem(K_UNL) === '1'; } catch (e) { S.unlimited = false; }
     var h = location.hash.replace(/^#\/?/, '');
     if (h.indexOf('r/') === 0) { showShared(h.slice(2)); return; }
 
@@ -798,18 +857,28 @@
         return;
       }
       var saved = readResult();
+      /* 这张码已经出过结果了 —— 不管本地有没有缓存，都不再给「开始测试」这条路。
+         以前只有 #/quiz、#/result 两种情况被挡住，直接开首页（不带 hash）照样能
+         点「开始测试」再答一遍，看起来就是「测完还能再测一次」。 */
+      if (S.resultAt && !S.unlimited) {
+        if (h !== 'result') { history.replaceState(null, '', '#/result'); }
+        if (saved) {
+          S.answers = saved.a.slice();
+          S.share = saved.s || null;
+          S.checked = saved.c || {};
+          S.an = QZ.analyze(S.answers);
+          renderResult();
+        } else {
+          showLostResult();
+        }
+        return;
+      }
       if (h === 'result' && saved) {
         S.answers = saved.a.slice();
         S.share = saved.s || null;
         S.checked = saved.c || {};
         S.an = QZ.analyze(S.answers);
         renderResult();
-        return;
-      }
-      /* 密码已经出过结果、本地却找不到结果：换设备或清了浏览器数据，别再让他白答 18 题 */
-      if (S.resultAt && !saved && (h === 'quiz' || h === 'result')) {
-        history.replaceState(null, '', '#/');
-        showLostResult();
         return;
       }
       if (h === 'quiz') { startQuiz(); return; }
