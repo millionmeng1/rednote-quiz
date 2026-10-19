@@ -92,7 +92,8 @@
       + '<canvas id="p-qr" class="pqrc"></canvas>'
       + '<div class="pqrt">扫码打开测评<br>拍下自动发货，输密码就能测</div>'
       + '</div>'
-      + (shop ? '<div class="f3">想测自己的？去小红书搜「' + esc(shop) + '」</div>' : '')
+      /* 图上点不了链接，所以把「去哪儿买」写成一句能照做的搜索指令 */
+      + (shop ? '<div class="f3">还没有测试密码？去小红书搜「' + esc(shop) + '」，拍下自动发货</div>' : '')
       + '</div>';
 
     return html;

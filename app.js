@@ -170,10 +170,69 @@
     $('shell').classList.toggle('hasbar', id === 'view-result' && S.mode === 'own');
   }
 
+  /* 店铺 / 搜索关键词：后台没填店铺名时退回商品名，保证搜得到 */
+  function shopKey() {
+    var s = CFG.shopName && String(CFG.shopName).indexOf('请到管理后台') < 0 ? String(CFG.shopName) : '';
+    return s || '疲惫类型自测';
+  }
+
+  /* 购买入口。之前只有后台填了商品链接（buyUrl）才会出现，链接一空就整块消失
+     —— 扫长图二维码进来的人满屏只有一个密码框，不知道去哪儿买。
+     现在不管有没有链接都给一块卡片：有链接直接跳商品页，没链接点开弹窗，
+     把「去小红书搜什么、密码发到哪儿」一步步讲清楚。 */
   function buyHTML() {
-    if (!CFG.buyUrl) return '';
-    return '<div class="buytip"><a href="' + esc(CFG.buyUrl) + '" target="_blank" rel="noopener">'
-      + esc(CFG.buyText || '还没有测试密码？到店铺下单后自动发货') + '</a></div>';
+    var go = CFG.buyUrl
+      ? '<a class="btn gold sm" style="text-decoration:none;display:block;text-align:center;max-width:320px;margin:0 auto"'
+        + ' href="' + esc(CFG.buyUrl) + '" target="_blank" rel="noopener">'
+        + esc(CFG.buyText || '去小红书拍一份 →') + '</a>'
+      : '<button class="btn gold sm" id="buyBtn" type="button" style="max-width:320px;margin:0 auto">'
+        + '去小红书拍一份 →</button>';
+    return '<div class="buycard">'
+      + '<div class="bct">还没有测试密码？</div>'
+      + go
+      + '<div class="bcs">拍下自动发货，密码发到小红书订单消息里</div>'
+      + '</div>';
+  }
+  function bindBuy() {
+    var b = $('buyBtn') || $('barBuyBtn') || $('mBuyBtn');
+    if (b) b.onclick = openBuyModal;
+  }
+  function openBuyModal() {
+    var key = shopKey();
+    var h = '<p>这个测评要一张测试密码才能开始，密码在小红书店铺里自动发货。</p>'
+      + '<ol class="steps">'
+      + '<li>打开小红书 App，搜索「' + esc(key) + '」；</li>'
+      + '<li>找到这个测评，拍下付款；</li>'
+      + '<li>付款后自动发货，密码会发到你的订单消息里；</li>'
+      + '<li>回到这个页面，输入密码就能测。</li>'
+      + '</ol>'
+      + '<button class="btn line" id="mCopyKey" type="button">复制搜索词「' + esc(key) + '」</button>';
+    openInfoModal('怎么拿到测试密码', h);
+    var cb = $('mCopyKey');
+    if (cb) {
+      cb.onclick = function () {
+        copyText(key).then(function (ok) {
+          toast(ok ? '已复制「' + key + '」，去小红书搜索框粘贴'
+            : '复制没成功，手动搜：' + key, 3000);
+        });
+      };
+    }
+  }
+
+  /* 扫码来源：长图右下角那个二维码带 ?f=qr。扫进来的人是看了朋友的结果、
+     想测自己 —— 认出来之后，第一屏就告诉他自己的那份怎么拿。 */
+  function fromQR() {
+    try {
+      if (/(?:^|[?&])f=qr(?:&|$)/.test(location.search || '')) {
+        try { sessionStorage.setItem('lei_fromqr_v1', '1'); } catch (e) { }
+        return true;
+      }
+      return sessionStorage.getItem('lei_fromqr_v1') === '1';
+    } catch (e) { return false; }
+  }
+  function qrChipHTML() {
+    return '<div class="qrchip">你扫到的是别人的测评结果 —— 想测自己的那份？'
+      + '下面这个按钮点一下，就知道去哪儿拍。</div>';
   }
   /* 客服入口：买家是在小红书店铺下的单，客服就在小红书里。
      这里不再给微信号、也不再复制任何东西 —— 只告诉他去哪儿找人。
@@ -203,7 +262,9 @@
       '<div class="brand">' + esc(CFG.shopName || '疲惫类型自测') + '</div>'
       + '<h1>' + esc(CFG.quizTitle || '你现在的累，是哪一种累？') + '</h1>'
       + '<p class="lead">大多数人只会说「我好累」，说不清是哪里累。<br>这个测试不给你分数，它给这种累一个名字。</p>'
+      + (fromQR() ? qrChipHTML() : '')
       + '<div class="facts"><span class="fact">18 道题 · 约 3 分钟</span><span class="fact">6 个维度 · 7 种结果</span><span class="fact">每种累附恢复处方</span></div>'
+      + buyHTML()
       + '<div class="gate">'
       + '<h2>请输入测试密码</h2>'
       + '<p class="tip">密码在商品详情页 / 小红书订单消息里，已购买的订单会自动发货。一个密码可以完整测试一次。</p>'
@@ -224,6 +285,7 @@
     var input = $('pwd'), btn = $('goBtn');
     btn.onclick = doRedeem;
     bindKefu();
+    bindBuy();
     input.onkeydown = function (e) { if (e.key === 'Enter') doRedeem(); };
     input.oninput = function () { input.value = input.value.toUpperCase().replace(/[^0-9A-Z-]/g, ''); $('gmsg').textContent = ''; $('gmsg').className = 'msg'; };
   }
@@ -570,10 +632,14 @@
                  而扫码进来的人恰恰多半是在微信里。所以主按钮下面必须留一条
                  「搜店铺名」的退路，别让人点了没反应就走了。 */
               + '<div class="barbuy">链接打不开？到小红书搜「' + esc(CFG.shopName || '疲惫类型自测') + '」</div>'
-            : '<div class="barbuy">想测自己的，到小红书搜「' + esc(CFG.shopName || '疲惫类型自测') + '」</div>')
+            /* 没配商品链接时，底栏那行「去小红书搜」原来只是行不能点的文字 ——
+               想买的人看着干着急。换成能点的按钮，点了弹窗讲清搜什么。 */
+            : '<button class="btn gold" id="barBuyBtn" type="button" style="margin:0">去小红书拍一份，自动发货</button>'
+              + '<div class="barbuy">到小红书搜「' + esc(CFG.shopName || '疲惫类型自测') + '」</div>')
         + '<div class="inner"><button class="btn line" id="ctaBtn">我也要测一下我的 →</button></div>'
         + '</div>';
       bar.classList.remove('hide');
+      bindBuy();
       $('ctaBtn').onclick = function () {
         S.authed = false; S.token = null;
         try { localStorage.removeItem(K_TOKEN); localStorage.removeItem(K_RESULT); } catch (e) { }
@@ -637,10 +703,14 @@
     if (CFG.buyUrl) {
       h += '<a class="btn gold" id="mBuy2" href="' + esc(CFG.buyUrl) + '" target="_blank" rel="noopener"'
         + ' style="margin-top:8px;text-decoration:none">' + esc(CFG.buyText || '去店铺下单，获取新的测试密码') + '</a>';
+    } else {
+      /* 没配商品链接也要留一条能点的路 —— 不然这条提示就成了死胡同 */
+      h += '<button class="btn gold" id="mBuyBtn" type="button" style="margin-top:8px">去小红书再拍一份</button>';
     }
     openInfoModal('这张密码已经用过啦', h);
     var cb = $('mKefu2');
     if (cb) cb.onclick = function () { openInfoModal('怎么联系客服', KEFU_GUIDE); };
+    bindBuy();
   }
 
   /* 保存长图 */
@@ -826,6 +896,7 @@
       + '<button class="btn" id="lostHome">返回首页</button>';
     show('view-gate');
     bindKefu();
+    bindBuy();
     $('lostHome').onclick = function () { history.replaceState(null, '', '#/'); location.reload(); };
   }
 
@@ -844,6 +915,7 @@
           + '<button class="btn" id="ctaBtn">我也要测一下我的</button>'
           + buyHTML();
         $('actbar').classList.add('hide');
+        bindBuy();
         var b = $('ctaBtn');
         if (b) b.onclick = function () { history.replaceState(null, '', '#/'); location.reload(); };
         return;
