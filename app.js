@@ -276,7 +276,6 @@
       + '<button class="btn" id="goBtn">验证并开始</button>'
       + '<div class="msg" id="gmsg"></div>'
       + '</div>'
-      + buyHTML()
       + kefuHTML()
       + '<div class="box" style="margin-top:14px"><p><b>怎么作答：</b>不用想太久，凭第一反应选频率就行。没有对错，也没有「应该」的答案。</p>'
       + '<p><b>你会得到：</b>一个属于你的累的名字、一张六维疲劳分布图、三条今天就能做的事。</p></div>';
