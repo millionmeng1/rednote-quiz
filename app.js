@@ -124,6 +124,8 @@
     an: null, share: null, link: null, img: null,
     checked: {}, mode: 'own', authed: false,
     resultAt: null,
+    /* 本次会话已经交过卷 —— 结果页据此不再给「再测一次」（一个密码只测一次） */
+    finished: false,
     /* 店主自己的永久测试码：允许反复完整体验（前台唯一豁免） */
     unlimited: false
   };
@@ -177,13 +179,11 @@
      这里不再给微信号、也不再复制任何东西 —— 只告诉他去哪儿找人。
      带一句站内路径，是因为大部分人不知道订单页里就有客服入口。 */
   var KEFU_GUIDE =
-      '<p>你是在小红书下的单，找客服直接在小红书里就行：</p>'
-    + '<ol class="steps">'
+      '<ol class="steps">'
     + '<li>打开小红书 App → 右下角「我」；</li>'
     + '<li>「我的订单」→ 找到这一单，点进去；</li>'
-    + '<li>右上角或订单详情里有「联系客服」，直接说就行。</li>'
-    + '</ol>'
-    + '<div class="box"><p>密码、发货、返现，都能在那里一次问清楚，不用加微信。</p></div>';
+    + '<li>订单详情里点「联系客服」。</li>'
+    + '</ol>';
 
   function kefuHTML() {
     /* 买家一定是在小红书店铺下的单，客服入口永远存在 —— 不依赖后台有没有填微信号 */
@@ -381,6 +381,11 @@
     $('nextBtn').textContent = (S.idx === N - 1) ? '看结果 →' : '下一题 →';
   }
 
+  /* 连点保护：原来是「点一下就排一个 200ms 后跳下一题」，手快连点两下会排两个
+     定时器 —— 题号连跳两次，中间那题的答案永远是 0，交卷时服务端直接拒收
+     （提示「答案格式有误」，买家完全不知道发生了什么）。
+     改成：重复点击只重置这一个定时器，答案以最后一次为准，永远只前进一题。 */
+  var pickTimer = null;
   function pick(v, el) {
     S.answers[S.idx] = v;
     var nodes = $('opts').children;
@@ -388,7 +393,9 @@
     if (el) el.classList.add('sel'); else if (nodes[v - 1]) nodes[v - 1].classList.add('sel');
     $('nextBtn').disabled = false;
     saveProgress();
-    setTimeout(function () {
+    if (pickTimer) clearTimeout(pickTimer);
+    pickTimer = setTimeout(function () {
+      pickTimer = null;
       if (S.idx < N - 1) { S.idx++; saveProgress(); renderQ(); window.scrollTo(0, 0); }
       else finish();
     }, 200);
@@ -408,6 +415,16 @@
 
   /* ---------------- 结果 ---------------- */
   function finish() {
+    /* 交卷前先自查：有任何一题没选就别交。以前带着残缺答案交上去，
+       服务端会拒收，页面却照常显示结果，买家一点「复制链接」才炸出来。 */
+    var miss = -1;
+    for (var i = 0; i < N; i++) { if (!S.answers[i]) { miss = i; break; } }
+    if (miss >= 0) {
+      S.idx = miss; saveProgress(); renderQ(); window.scrollTo(0, 0);
+      toast('第 ' + (miss + 1) + ' 题还没选 —— 选一下就能看结果了');
+      return;
+    }
+    S.finished = true;
     S.an = QZ.analyze(S.answers);
     S.mode = 'own';
     S.share = null;
@@ -490,7 +507,13 @@
     h += '<div class="disc">' + esc(QD.DISCLAIMER).replace(/\n/g, '<br>') + '</div>';
 
     if (mode === 'own') {
-      h += '<button class="btn ghost sm" id="retestBtn">再测一次</button>';
+      /* 一张密码只能完整测一次。已经出过结果就不再摆「再测一次」——
+         摆着是误导（点了照样被服务端驳回）。想再测只能用一张新密码。
+         这里不能只看 S.resultAt：它是异步回的，刚交卷那会儿还是空的，
+         按钮会闪一下又被买家看见，所以另外记一个「本次已交卷」的标记。 */
+      if (!S.resultAt && !S.finished) {
+        h += '<button class="btn ghost sm" id="retestBtn">再测一次</button>';
+      }
       /* 换码入口：一张码只能测一次，想再测就得有新密码 —— 这是「退出登录」，
          不是「重来一次」。店主自己验收时也靠它回到输密码那一步，不用清浏览器数据。 */
       h += '<div class="switchrow">给家人朋友测、或者手上还有一张新密码？'
@@ -578,7 +601,7 @@
       if (btn) { btn.disabled = false; btn.textContent = '再测一次'; }
       if (r && r.ok && r.allow) {
         S.answers = new Array(N).fill(0);
-        S.idx = 0; S.an = null; S.checked = {}; S.share = null;
+        S.idx = 0; S.an = null; S.checked = {}; S.share = null; S.finished = false;
         try { localStorage.removeItem(K_RESULT); } catch (e) { }
         clearProgress();
         history.replaceState(null, '', '#/quiz');
@@ -599,7 +622,7 @@
       localStorage.removeItem(K_UNL);
       localStorage.removeItem(K_PROG);
     } catch (e) { }
-    S.token = null; S.authed = false; S.resultAt = null; S.unlimited = false;
+    S.token = null; S.authed = false; S.resultAt = null; S.unlimited = false; S.finished = false;
     S.idx = 0; S.an = null; S.share = null; S.answers = new Array(N).fill(0);
     history.replaceState(null, '', '#/');
     showGate();
@@ -713,7 +736,10 @@
     var need = S.share ? Promise.resolve(S.share)
       : api('/api/share', { method: 'POST', body: { token: S.token, answers: S.answers } }).then(function (r) {
         if (r && r.ok && r.share) { S.share = r.share; saveResult(); return r.share; }
-        throw new Error((r && r.message) || '分享链接生成失败，请稍后再试。');
+        /* 服务端那句「答案格式有误」买家看不懂也照做不了，换成能照做的动作 */
+        throw new Error(r && r.error === 'answers'
+          ? '结果还没保存好 —— 请下拉刷新页面，再点一次复制链接。'
+          : ((r && r.message) || '分享链接生成失败，请稍后再试。'));
       });
     showLoading('正在生成分享链接…');
     need.then(function (code) {
