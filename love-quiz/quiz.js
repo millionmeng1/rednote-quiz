@@ -24,7 +24,12 @@
     for (var i = from; i < to; i++) {
       var q = QD.QUESTIONS[i];
       if (!q || !sum.hasOwnProperty(q.d)) continue;
-      sum[q.d] += (answers[i] || 0);
+      /* 反向题：选「几乎总是」(5) 表示这一项其实最低，翻成 1。
+         不翻转的话，「你不说，但希望 TA 看出来」选了几乎总是，
+         反而会把「主动表达」这一维顶到满分 —— 结论正好反过来。 */
+      var v = answers[i] || 0;
+      if (q.r && v >= 1 && v <= 5) v = 6 - v;
+      sum[q.d] += v;
       cnt[q.d]++;
     }
     var s = {};
