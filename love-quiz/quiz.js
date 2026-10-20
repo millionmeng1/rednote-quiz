@@ -91,6 +91,16 @@
   }
 
   /* ---------- 维度条（屏幕用 SVG） ---------- */
+  /* 把 0-100 的分数翻译成人话等级。
+     光甩一个「100」「2」读者不知道好坏，尤其「明确 2」看着像出错了。 */
+  function levelOf(v) {
+    if (v >= 80) return '很高';
+    if (v >= 60) return '偏高';
+    if (v >= 40) return '中等';
+    if (v >= 20) return '偏低';
+    return '很低';
+  }
+
   function barsSVG(scores, dims, opt) {
     opt = opt || {};
     var rowH = 46, W = 300, H = dims.length * rowH + 8;
@@ -99,7 +109,8 @@
       var y = 6 + i * rowH;
       var v = Math.max(scores[d] | 0, 2);
       s += '<text x="0" y="' + (y + 12) + '" dominant-baseline="central" font-size="13" font-weight="600" fill="' + DIMCOLOR[d] + '" font-family="inherit">' + DIMNAME[d] + '</text>';
-      s += '<text x="' + W + '" y="' + (y + 12) + '" text-anchor="end" dominant-baseline="central" font-size="12.5" fill="#9aa2ac" font-family="inherit">' + v + '</text>';
+      /* 右边给「人话等级」而不是裸分数 —— 分数是内部量，读者只用得上高低 */
+      s += '<text x="' + W + '" y="' + (y + 12) + '" text-anchor="end" dominant-baseline="central" font-size="13" font-weight="700" fill="' + DIMCOLOR[d] + '" font-family="inherit">' + levelOf(v) + '</text>';
       s += '<rect x="0" y="' + (y + 22) + '" width="' + W + '" height="8" rx="4" fill="#eef0f4"/>';
       s += '<rect x="0" y="' + (y + 22) + '" width="' + (W * v / 100).toFixed(1) + '" height="8" rx="4" fill="' + DIMCOLOR[d] + '"/>';
       s += '<text x="0" y="' + (y + 38) + '" dominant-baseline="central" font-size="11.5" fill="#9aa2ac" font-family="inherit">' + QD.DIMNOTE[d] + '</text>';
@@ -123,8 +134,9 @@
       ctx.fillText(DIMNAME[d], x, cy);
       ctx.textAlign = 'right';
       ctx.font = '700 26px "PingFang SC","Microsoft YaHei",sans-serif';
-      ctx.fillStyle = ink;
-      ctx.fillText(String(v), x + W, cy);
+      /* 和屏幕版保持一致：给等级词而不是裸分数 */
+      ctx.fillStyle = DIMCOLOR[d];
+      ctx.fillText(levelOf(v), x + W, cy);
       var by = cy + 20;
       ctx.fillStyle = '#e6e9ef';
       ctx.beginPath();
@@ -149,6 +161,7 @@
     nearestType: nearestType,
     analyze: analyze,
     barsSVG: barsSVG,
-    barsCanvas: barsCanvas
+    barsCanvas: barsCanvas,
+    levelOf: levelOf
   };
 })(window);

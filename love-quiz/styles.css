@@ -118,7 +118,7 @@ h1{font-size:26px;line-height:1.38;margin:0 0 12px;letter-spacing:-.5px}
 .fix li.on .tx{color:var(--ink3);text-decoration:line-through}
 .fixcount{font-size:12.5px;color:var(--ink3);margin-top:11px}
 .last{background:var(--redsoft);border-radius:15px;padding:20px;font-size:17.5px;font-weight:600;color:var(--reddeep);line-height:1.66;margin-bottom:14px}
-.disc{font-size:11.5px;color:var(--ink3);text-align:center;line-height:1.75;padding:0 6px;margin:4px 0 14px}
+.disc{font-size:11.5px;color:var(--ink3);text-align:center;line-height:1.75;padding:14px 6px 0;margin:4px 0 14px;border-top:1px dashed #E7EBF0}
 .sharedtag{background:#eaf1fe;color:#0c447c;border-radius:12px;padding:11px 15px;font-size:13px;margin-bottom:14px;line-height:1.7}
 
 /* ================= 底部操作条 ================= */
@@ -168,7 +168,7 @@ h1{font-size:26px;line-height:1.38;margin:0 0 12px;letter-spacing:-.5px}
 .buytip.dim{font-size:12.5px;margin-top:9px}
 .buytip .mini{padding:3px 10px;font-size:11.5px;border-radius:8px;border:1px solid var(--line);background:var(--card);
   color:var(--red);cursor:pointer;font-weight:600;margin-left:6px;vertical-align:1px}
-.switchrow{margin-top:10px;text-align:center;font-size:12.5px;color:var(--ink3);line-height:1.6}
+.switchrow{margin:2px 0 22px;text-align:center;font-size:12.5px;color:var(--ink3);line-height:1.6}
 .switchrow .mini{padding:3px 10px;font-size:11.5px;border-radius:8px;border:1px solid var(--line);background:var(--card);
   color:var(--ink2);cursor:pointer;font-weight:600;margin-left:6px;vertical-align:1px}
 .innercol{display:flex;flex-direction:column;gap:8px}
@@ -233,4 +233,97 @@ h1{font-size:26px;line-height:1.38;margin:0 0 12px;letter-spacing:-.5px}
 .box.again .btn{margin-top:12px;max-width:320px}
 
 /* 不返现，所以好评只能靠一句零成本的话去要 */
-.praiseline{text-align:center;font-size:12.5px;color:#8b929c;margin:18px 0 6px;line-height:1.75}
+.praiseline{text-align:center;font-size:12.5px;color:#8b929c;margin:20px 0 14px;line-height:1.75}
+
+/* ==========================================================================
+   结果页 v2
+   --------------------------------------------------------------------------
+   改版原因：旧版是 8 张一模一样的白卡排队，读者滚到第二屏就失去落点。
+   新版每一段用不同的容器形态区分层次：
+     封面（渐变重卡）→ 三宫格 → 金句（粉）→ 图表卡 → 引用体（左竖线）
+     → 警示（黄）→ 折叠（灰字）→ 对照（双卡）→ 步骤（可勾选）
+   ========================================================================== */
+
+/* 封面：一屏之内给完型号 + 组合 + 贴合度 */
+.hero{
+  background:linear-gradient(180deg,#fff 0%,#FFF8FB 100%);
+  border:1px solid #F5DDE6; border-radius:22px;
+  padding:24px 20px 20px; margin-bottom:12px;
+  box-shadow:0 1px 2px rgba(20,24,30,.04), 0 16px 36px -20px rgba(114,36,62,.30);
+}
+.hlab{font-size:10.5px;font-weight:700;letter-spacing:.2em;color:#BC7E93;margin-bottom:7px}
+.hname{font-size:27px;font-weight:800;color:#1c2026;line-height:1.3;letter-spacing:-.8px}
+.hsub{font-size:12.5px;color:#8b939d;margin-top:6px;letter-spacing:.02em}
+.hdiv{height:1px;background:linear-gradient(90deg,#F2D7E2,rgba(242,215,226,0));margin:20px 0 18px}
+.hcombo{font-size:18.5px;font-weight:700;color:#72243E;line-height:1.52;margin-bottom:13px}
+
+.fit{height:9px;border-radius:5px;background:#F4E7ED;overflow:hidden}
+.fit i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,#ED93B1,#D4537E)}
+.fitmeta{display:flex;align-items:center;gap:8px;margin-top:9px;font-size:11.5px;color:#8b939d}
+.fitmeta b{font-size:19px;font-weight:800;color:#D4537E;line-height:1;letter-spacing:-.5px}
+.fitmeta em{font-style:normal;font-weight:700;font-size:11.5px;color:#72243E;background:#FBEAF0;padding:2px 9px;border-radius:20px;letter-spacing:.02em}
+
+/* 声明收在封面卡底部：像一个注脚，读起来是「补充」，不是「免责警告」 */
+.heroNote{margin-top:15px;padding-top:12px;border-top:1px dashed #F0DCE5;font-size:10.5px;color:#A7919B;line-height:1.7}
+.heroNote b{color:#7d6470;font-weight:700}
+
+/* 三个关键指标：用等级词，不用裸分数。
+   颜色刻意用中性墨色 —— 「很高 / 很低」本身不是好坏，
+   全用粉色会让读者以为三个都是好消息。 */
+.kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.kpi .k{background:#fff;border:1px solid #EDF0F4;border-radius:14px;padding:12px 4px;text-align:center}
+.kpi .k b{display:block;font-size:15px;font-weight:800;color:#2b3038;line-height:1.3}
+.kpi .k span{display:block;font-size:10px;color:#8b939d;margin-top:3px;letter-spacing:.02em}
+
+/* 声明压成一行小字：重要，但不能在读者还没读到内容时就劝退 */
+.hintline{font-size:11.5px;color:#96a0ab;text-align:center;line-height:1.7;margin:0 0 14px}
+.hintline b{color:#5f6b78}
+
+/* 维度条容器 */
+.chart{background:#fff;border:1px solid #EDF0F4;border-radius:16px;padding:16px 16px 8px;margin-bottom:14px}
+.chart .radar{width:100%;height:auto;display:block}
+
+/* 引用体：全篇最该被记住的几句话，用左竖线 + 大字，不用 bullet */
+.qbox{background:#fff;border:1px solid #EDF0F4;border-radius:16px;padding:18px 18px 6px;margin-bottom:14px}
+.qlab{font-size:10.5px;font-weight:700;letter-spacing:.16em;color:#BC7E93;margin-bottom:13px}
+.qbox .q{margin:0 0 13px;font-size:15.5px;font-weight:600;color:#72243E;line-height:1.72;padding-left:15px;position:relative}
+.qbox .q:last-child{margin-bottom:12px}
+.qbox .q::before{content:'';position:absolute;left:0;top:.45em;bottom:.45em;width:4px;border-radius:2px;background:linear-gradient(180deg,#ED93B1,#D4537E)}
+
+/* 折叠区：想深挖的人点开，只看结论的人不用滚过去 */
+.acc{background:#fff;border:1px solid #EDF0F4;border-radius:14px;margin-bottom:14px;overflow:hidden}
+.acc summary{list-style:none;cursor:pointer;padding:15px 18px;font-size:12.5px;font-weight:700;color:#7b848f;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.acc summary::-webkit-details-marker{display:none}
+.acc summary::after{content:'展开';font-size:11px;font-weight:700;color:#D4537E;flex:0 0 auto}
+.acc[open] summary::after{content:'收起'}
+.accin{padding:2px 18px 16px;border-top:1px solid #F2F4F7}
+.accin p{margin:12px 0 0;font-size:13.5px;color:#4c535d;line-height:1.85}
+.accin p:first-child{margin-top:14px}
+
+/* 投入浓度的「人话」解读（原来那条和维度条重复的进度条去掉了） */
+.conc{font-size:13px;color:#4c535d;line-height:1.8;background:#fff;border-left:3px solid #ED93B1;border-radius:0 12px 12px 0;padding:12px 15px;margin-bottom:14px}
+.conc b{color:#D4537E;font-weight:800}
+
+/* 对照卡：TA 在给 / 你在等 —— 一眼看出错位在哪 */
+.swap{display:flex;align-items:stretch;gap:8px;margin-bottom:14px}
+.sw{flex:1;background:#fff;border:1px solid #EDF0F4;border-radius:14px;padding:14px 8px;text-align:center}
+.swa{border-color:#F3D9E4;background:#FFFBFD}
+.swb{border-color:#DBE7F4;background:#FBFDFF}
+.swlab{font-size:10px;letter-spacing:.16em;font-weight:700;color:#8b939d;margin-bottom:7px}
+.swval{font-size:14.5px;font-weight:800;line-height:1.4}
+.swa .swval{color:#D4537E}
+.swb .swval{color:#185FA5}
+.swarrow{flex:0 0 16px;display:flex;align-items:center;justify-content:center;font-size:15px;color:#C9D0D9}
+
+/* 三条动作：可勾选，勾完存本地 */
+.steps{background:#fff;border:1px solid #EDF0F4;border-radius:16px;padding:18px 18px 16px;margin-bottom:14px}
+.stepshead{font-size:10.5px;font-weight:700;letter-spacing:.16em;color:#BC7E93;margin-bottom:15px;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.stepshead em{font-style:normal;font-size:10.5px;font-weight:600;letter-spacing:0;color:#a3abb5}
+#fixlist{list-style:none;margin:0;padding:0}
+#fixlist li{display:flex;gap:11px;align-items:flex-start;margin-bottom:15px;cursor:pointer}
+#fixlist li:last-child{margin-bottom:0}
+#fixlist li .tick{flex:0 0 19px;width:19px;height:19px;margin-top:2px;border-radius:50%;border:1.5px solid #E3CAD4;position:relative;transition:background .16s,border-color .16s}
+#fixlist li p{margin:0;font-size:13.5px;color:#4c535d;line-height:1.8}
+#fixlist li.on .tick{background:#D4537E;border-color:#D4537E}
+#fixlist li.on .tick::after{content:'';position:absolute;left:6px;top:2.5px;width:4px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(43deg)}
+#fixlist li.on p{color:#a3abb5;text-decoration:line-through;text-decoration-color:#E3CAD4}

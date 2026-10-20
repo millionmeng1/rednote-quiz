@@ -524,65 +524,127 @@
     });
   }
 
+  /* ==========================================================================
+     结果页
+     ---------------------------------------------------------------------------
+     结构原则（改版时定的，别随手打乱）：
+       封面一屏给结论（型号 + 组合 + 贴合度 + 三个关键指标）→
+       ① TA 怎么表达 ② 你怎么喜欢 ③ 你们卡在哪 → 一句金句 → 动作/钩子 → 免责
+     每一段最多一个「白卡」，其余用无卡片的正文 / 黄卡 / 粉卡区分层次，
+     否则 8 张一模一样的白卡排下来读者眼睛没有落点。
+     ========================================================================== */
   function resultHTML(an, mode) {
     var ta = an.ta, me = an.me, m = an.match, h = '';
     var mine = (mode === 'own');
-    function ul(arr) {
-      return '<ul>' + arr.map(function (x) { return '<li>' + x + '</li>'; }).join('') + '</ul>';
-    }
+    var L = QZ.levelOf;
+    var ts = an.taScores, ms = an.meScores;
 
-    /* ---------- ① TA 的表达型号 ---------- */
-    h += '<div class="rhead">';
-    h += '<div class="rlab">' + (mine ? 'TA 的表达型号' : 'TA 的型号') + '</div>';
-    h += '<div class="rname" style="color:#D4537E">' + esc(ta.title) + '</div>';
-    h += '<div class="rsub">' + esc(ta.name) + '｜' + esc(ta.sub) + '｜' + esc(ta.en) + '</div>';
-    h += QZ.barsSVG(an.taScores, QD.TA_DIMS, { label: 'TA 的四个维度' });
+    /* TA 在「给」什么 / 你在「等」什么 —— 取各自最突出的那个维度自动生成，
+       不用手写 42 格，而且永远和上面的维度条一致。
+       排序用「实际得分 + 型号特征」各占一半：只看实际得分的话，
+       供养型这种 P 和 S 都满分的会取到「主动靠近」，可它的招牌明明是做事；
+       加上型号特征坐标就能压回「时间和行动」。 */
+    var TA_GIVE = { P: '主动靠近', Q: '把话说清楚', R: '忽冷忽热的存在感', S: '时间和行动' };
+    var ME_WAIT = { M: '一句明确的确认', N: '被稳稳地放在心上', O: '你先迈出的那一步' };
+    function topDim(scores, dims, vec) {
+      var best = dims[0], bestScore = -1;
+      dims.forEach(function (d) {
+        var sc = (scores[d] | 0) * 0.5 + ((vec && vec[d]) | 0) * 0.5;
+        if (sc > bestScore) { bestScore = sc; best = d; }
+      });
+      return best;
+    }
+    var giveKey = topDim(ts, QD.TA_DIMS, ta.vec), waitKey = topDim(ms, QD.ME_DIMS, me.vec);
+
+    /* 投入浓度的「人话」，替掉原来那条和维度条重复的进度条 */
+    var concText = an.concentration >= 80 ? '你已经把心放得很进去了，任何一点风吹草动都会被放大。'
+      : an.concentration >= 60 ? '你投入得不轻，但还给自己留了一条退路。'
+        : an.concentration >= 40 ? '你在投入和观望之间来回摆，还没定下来。'
+          : '你还在门口站着，没真正走进去。';
+
+    /* ---------- 封面：一屏之内把三件事说清 ---------- */
+    h += '<div class="hero">';
+    h += '<div class="hlab">TA 的表达型号</div>';
+    h += '<div class="hname">' + esc(ta.title) + '</div>';
+    h += '<div class="hsub">' + esc(ta.name) + ' · ' + esc(ta.sub) + '</div>';
+    h += '<div class="hdiv"></div>';
+    h += '<div class="hlab">你和 TA 的组合</div>';
+    h += '<div class="hcombo">' + esc(m.name) + '</div>';
+    h += '<div class="fit"><i style="width:' + an.pct + '%"></i></div>';
+    h += '<div class="fitmeta"><span>贴合度</span><b>' + an.pct + '</b><em>' + esc(an.band) + '</em></div>';
+    /* 声明放在封面卡里收尾：它很重要（不写清楚会被当成「不准」），
+       但单独占一块放在正文中间会劝退 —— 读者还没读到内容就先被告知「这可能不对」。 */
+    h += '<div class="heroNote">这份结果描述的是<b>你感受到的那个 TA</b>，不是 TA 本人，也不代表 TA 的真实想法。</div>';
+    h += '</div>';
+
+    /* 三个最关键的数字，直接给人话等级 */
+    h += '<div class="kpi">';
+    h += '<div class="k"><b>' + L(ts.P) + '</b><span>TA 主动</span></div>';
+    h += '<div class="k"><b>' + L(ts.Q) + '</b><span>TA 把话说清</span></div>';
+    h += '<div class="k"><b>' + L(ms.M) + '</b><span>你要的确认</span></div>';
     h += '</div>';
 
     h += '<div class="qcard">' + esc(ta.def) + '</div>';
 
-    /* 这条声明必须放在结果最前面：答题人是买家自己，测的是她主观感受到的 TA。
-       不写清楚就会被当成「不准」—— 而它本来就不是客观测量。 */
-    h += '<div class="notice">这份结果描述的是<b>你感受到的那个 TA</b> —— 它测的是表达方式在你这边的样子，不是 TA 本人，也不代表 TA 的真实想法。</div>';
+    /* ---------- ① TA 是这样表达喜欢的 ---------- */
+    h += '<div class="sec"><div class="sect">① TA 是这样表达喜欢的</div>';
+    h += '<div class="chart">' + QZ.barsSVG(ts, QD.TA_DIMS, { label: 'TA 的四个维度' }) + '</div>';
 
-    h += '<div class="blk"><div class="lb">为什么会是这个型号</div>';
+    /* 引用体代替 bullet —— 这是全篇最该被记住的三句话 */
+    h += '<div class="qbox"><div class="qlab">TA 这样的时候，其实是在说</div>';
+    ta.signal.forEach(function (x) {
+      h += '<p class="q">「' + esc(x) + '」</p>';
+    });
+    h += '</div>';
+
+    h += '<div class="blk warn"><div class="lb">你最容易误读成</div><p>' + esc(ta.miss) + '</p></div>';
+
+    /* 解释性内容收进折叠区：想深挖的人点开，只想看结论的人不用滚过去 */
+    h += '<details class="acc"><summary>为什么是「' + esc(ta.name) + '」，TA 平时什么样</summary><div class="accin">';
     ta.why.forEach(function (p) { h += '<p>' + p + '</p>'; });
+    h += '<p>' + esc(ta.day) + '</p>';
+    h += '</div></details>';
     h += '</div>';
 
-    h += '<div class="blk"><div class="lb">TA 的典型样子</div><p>' + esc(ta.day) + '</p></div>';
-    h += '<div class="blk"><div class="lb">TA 这样的时候，其实是在表达</div>' + ul(ta.signal) + '</div>';
-    h += '<div class="blk warn"><div class="lb">你最容易误读成什么</div><p>' + esc(ta.miss) + '</p></div>';
-    h += '<div class="blk"><div class="lb">你可以这样接</div>' + ul(ta.do) + '</div>';
-
-    /* ---------- ② 你的喜欢型号 ---------- */
-    h += '<div class="sec"><div class="sect">② 你的喜欢型号</div>';
+    /* ---------- ② 你是在这样喜欢的 ---------- */
+    h += '<div class="sec"><div class="sect">② 你是在这样喜欢的</div>';
     h += '<div class="rname2">' + esc(me.name) + '</div>';
-    h += QZ.barsSVG(an.meScores, QD.ME_DIMS, { label: '你的三个维度' });
-    h += '<div class="temp"><div class="tl"><span>你的投入浓度</span><b>' + an.concentration + ' / 100</b></div>'
-      + '<div class="tbar"><i style="width:' + an.concentration + '%"></i></div>'
-      + '<div class="nowline">浓度高不是问题，问题是它会不会让你在该停的时候停不下来。</div></div>';
-    h += '<div class="qcard">' + esc(me.def) + '</div>';
-    h += '<div class="blk"><div class="lb">你怎么喜欢一个人</div><p>' + esc(me.way) + '</p></div>';
-    h += '<div class="blk"><div class="lb">为什么会这样</div>';
+    h += '<div class="chart">' + QZ.barsSVG(ms, QD.ME_DIMS, { label: '你的三个维度' }) + '</div>';
+    h += '<div class="conc">你的投入浓度 <b>' + L(an.concentration) + '</b> —— ' + concText + '</div>';
+
+    h += '<div class="qbox"><div class="qlab">你怎么喜欢一个人</div>';
+    h += '<p class="q">' + esc(me.way) + '</p></div>';
+
+    /* 标题刻意和 ① 的「你最容易误读成」区分开：那一块说的是「你怎么看 TA」，
+       这一块说的是「你一直以来的模式」，否则读者会觉得同一句话说两遍。 */
+    h += '<div class="blk warn"><div class="lb">你一直以来的盲区</div><p>' + esc(me.blind) + '</p></div>';
+    /* need 本身以「你需要…」开头，前面别再拼「你真正需要的，是」 */
+    h += '<div class="qcard">' + esc(me.need) + '</div>';
+
+    h += '<details class="acc"><summary>为什么会变成这样</summary><div class="accin">';
     me.why.forEach(function (p) { h += '<p>' + p + '</p>'; });
-    h += '</div>';
-    h += '<div class="blk warn"><div class="lb">你的盲区</div><p>' + esc(me.blind) + '</p></div>';
-    h += '<div class="blk"><div class="lb">你真正需要的</div><p>' + esc(me.need) + '</p></div>';
+    h += '</div></details>';
     h += '</div>';
 
-    /* ---------- ③ 匹配 ---------- */
-    h += '<div class="sec"><div class="sect">③ 你们俩的咬合方式</div>';
-    h += '<div class="mname">' + esc(m.name) + '</div>';
-    h += '<div class="temp"><div class="tl"><span>贴合度</span><b>' + an.pct + ' / 100</b></div>'
-      + '<div class="tbar"><i style="width:' + an.pct + '%"></i></div>'
-      + '<div class="nowline">贴合度只表示两种表达方式咬合得顺不顺（' + esc(an.band)
-      + '），不代表这段关系好不好，也不预测任何结果。</div></div>';
-    h += '<div class="blk"><div class="lb">最容易卡住你们的点</div><p>' + esc(m.stuck) + '</p></div>';
-    h += '<div class="blk"><div class="lb">现在就能做的三件事</div>' + ul(m.tips) + '</div>';
+    /* ---------- ③ 你们卡在哪一段 ---------- */
+    h += '<div class="sec"><div class="sect">③ 你们卡在哪一段</div>';
+    h += '<div class="swap">'
+      + '<div class="sw swa"><div class="swlab">TA 在给</div><div class="swval">' + TA_GIVE[giveKey] + '</div></div>'
+      + '<div class="swarrow">↔</div>'
+      + '<div class="sw swb"><div class="swlab">你在等</div><div class="swval">' + ME_WAIT[waitKey] + '</div></div>'
+      + '</div>';
+    h += '<div class="qbox"><div class="qlab">所以你们卡在这里</div><p class="q">' + esc(m.stuck) + '</p></div>';
+
+    /* 三条动作做成可勾选的步骤 —— 勾完存本地，回来还在 */
+    h += '<div class="steps"><div class="stepshead">现在就能做的三件事<em id="fixcount">今天完成了 0 / 3</em></div><ul id="fixlist">';
+    m.tips.forEach(function (t, i) {
+      h += '<li data-i="' + i + '"' + (S.checked && S.checked[i] ? ' class="on"' : '') + '>'
+        + '<i class="tick"></i><p>' + esc(t) + '</p></li>';
+    });
+    h += '</ul></div>';
     h += '</div>';
 
     h += '<div class="last">表达方式是可以学的，接收方式也是。你们中间差的那部分，叫翻译。</div>';
-    h += '<div class="disc">' + esc(QD.DISCLAIMER).replace(/\n/g, '<br>') + '</div>';
 
     if (mine) {
       /* 复购钩子：测完 TA 的人，下一步一定想知道「那 TA 眼里的我呢」 */
@@ -596,6 +658,8 @@
       h += '<div class="switchrow">手上还有一张新密码？'
         + '<button class="mini" id="switchBtn" type="button">换个密码</button></div>';
     }
+
+    h += '<div class="disc">' + esc(QD.DISCLAIMER).replace(/\n/g, '<br>') + '</div>';
     return h;
   }
 
