@@ -93,7 +93,7 @@
   /* ---------- 维度条（屏幕用 SVG） ---------- */
   function barsSVG(scores, dims, opt) {
     opt = opt || {};
-    var rowH = 42, W = 300, H = dims.length * rowH + 8;
+    var rowH = 46, W = 300, H = dims.length * rowH + 8;
     var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" class="radar" role="img" aria-label="' + (opt.label || '维度分布') + '">';
     dims.forEach(function (d, i) {
       var y = 6 + i * rowH;
@@ -111,7 +111,7 @@
   /* ---------- 维度条（长图用 Canvas） ---------- */
   function barsCanvas(ctx, scores, dims, x, y, W, opt) {
     opt = opt || {};
-    var rowH = opt.rowH || 62;
+    var rowH = opt.rowH || 84;
     var ink = opt.ink || '#1c2026', sub = opt.sub || '#9aa2ac';
     dims.forEach(function (d, i) {
       var cy = y + i * rowH;
@@ -137,7 +137,7 @@
       ctx.textAlign = 'left';
       ctx.font = '400 22px "PingFang SC","Microsoft YaHei",sans-serif';
       ctx.fillStyle = sub;
-      ctx.fillText(QD.DIMNOTE[d], x, by + 32);
+      ctx.fillText(QD.DIMNOTE[d], x, by + 34);
     });
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';

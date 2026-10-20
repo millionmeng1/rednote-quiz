@@ -145,7 +145,7 @@
   function drawBars(id, scores, dims) {
     var cv = document.getElementById(id);
     if (!cv) return;
-    var CW = 620, rowH = 62;
+    var CW = 620, rowH = 84;
     var CH = dims.length * rowH + 20;
     var dpr = 2;
     cv.width = CW * dpr; cv.height = CH * dpr;
