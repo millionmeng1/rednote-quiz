@@ -23,12 +23,19 @@
     var ta = an.ta, me = an.me, m = an.match;
     var html = '';
 
+    /* 长图是分享出去给别人看的，第一眼必须同时给出「TA 是谁」和「你们什么组合」——
+       只写 TA 的型号，看图的人不知道这张图跟谁有关，也就没有点开的动力。 */
     html += '<div class="phead">'
       + '<div class="pbrand">' + esc(cfg.shopName || '恋爱型号自测') + '</div>'
       + '<div class="plab">TA 的表达型号</div>'
       + '<div class="pname">' + esc(ta.title) + '</div>'
-      + '<div class="psub">' + esc(ta.name) + '｜' + esc(ta.sub) + '<br>' + esc(ta.en) + '</div>'
-      + '<div class="pflag">贴合度 ' + an.pct + ' / 100 · ' + esc(an.band) + '</div>'
+      + '<div class="psub">' + esc(ta.name) + ' · ' + esc(ta.sub) + '</div>'
+      + '<div class="pdiv"></div>'
+      + '<div class="plab">你和 TA 的组合</div>'
+      /* 注意：不能叫 pcombo —— 那个 class 第三段的匹配卡片已经在用（白底卡） */
+      + '<div class="pduo">' + esc(m.name) + '</div>'
+      + '<div class="pfit"><i style="width:' + an.pct + '%"></i></div>'
+      + '<div class="pfitmeta"><span>贴合度</span><b>' + an.pct + '</b><em>' + esc(an.band) + '</em></div>'
       + '</div>';
 
     /* ① TA 的型号：四个维度的条 */
@@ -55,7 +62,7 @@
     html += '<div class="pcard"><div class="pst">你可以这样接</div>' + ul(ta.do) + '</div>';
 
     /* ② 你的喜欢型号 */
-    html += '<div class="psec">② 你的喜欢型号</div>';
+    html += '<div class="psec">② 你是在这样喜欢的</div>';
     html += '<div class="pname2">' + esc(me.name) + '</div>';
 
     html += '<div class="pcard">'
@@ -74,7 +81,7 @@
     html += '<div class="pcard"><div class="pst">你真正需要的</div><p>' + esc(me.need) + '</p></div>';
 
     /* ③ 匹配 */
-    html += '<div class="psec">③ 你们俩的咬合方式</div>';
+    html += '<div class="psec">③ 你们卡在哪一段</div>';
     html += '<div class="pmname">' + esc(m.name) + '</div>';
     html += '<div class="pcard">'
       + '<div class="pcidx"><div class="pcidxt"><span>贴合度</span><b>' + an.pct + ' / 100</b></div>'

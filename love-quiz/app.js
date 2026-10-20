@@ -599,16 +599,21 @@
 
     h += '<div class="blk warn"><div class="lb">你最容易误读成</div><p>' + esc(ta.miss) + '</p></div>';
 
-    /* 解释性内容收进折叠区：想深挖的人点开，只想看结论的人不用滚过去 */
-    h += '<details class="acc"><summary>为什么是「' + esc(ta.name) + '」，TA 平时什么样</summary><div class="accin">';
+    /* 解释性内容 + 「你可以这样接」收进折叠区：想深挖的人点开，只看结论的人不用滚过去。
+       ta.do 不能删 —— 这三条是针对这个型号的接法，和 ③ 段那个组合级的动作不重复。 */
+    h += '<details class="acc"><summary><span>关于「' + esc(ta.name) + '」：TA 平时什么样</span></summary><div class="accin">';
     ta.why.forEach(function (p) { h += '<p>' + p + '</p>'; });
     h += '<p>' + esc(ta.day) + '</p>';
+    h += '<p class="accdo">你可以这样接：</p><ul class="accdo-ul">';
+    ta.do.forEach(function (x) { h += '<li>' + x + '</li>'; });
+    h += '</ul>';
     h += '</div></details>';
     h += '</div>';
 
     /* ---------- ② 你是在这样喜欢的 ---------- */
     h += '<div class="sec"><div class="sect">② 你是在这样喜欢的</div>';
     h += '<div class="rname2">' + esc(me.name) + '</div>';
+    h += '<div class="qcard">' + esc(me.def) + '</div>';
     h += '<div class="chart">' + QZ.barsSVG(ms, QD.ME_DIMS, { label: '你的三个维度' }) + '</div>';
     h += '<div class="conc">你的投入浓度 <b>' + L(an.concentration) + '</b> —— ' + concText + '</div>';
 
@@ -621,7 +626,7 @@
     /* need 本身以「你需要…」开头，前面别再拼「你真正需要的，是」 */
     h += '<div class="qcard">' + esc(me.need) + '</div>';
 
-    h += '<details class="acc"><summary>为什么会变成这样</summary><div class="accin">';
+    h += '<details class="acc"><summary><span>为什么会变成这样</span></summary><div class="accin">';
     me.why.forEach(function (p) { h += '<p>' + p + '</p>'; });
     h += '</div></details>';
     h += '</div>';

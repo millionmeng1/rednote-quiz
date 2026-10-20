@@ -293,12 +293,18 @@ h1{font-size:26px;line-height:1.38;margin:0 0 12px;letter-spacing:-.5px}
 /* 折叠区：想深挖的人点开，只看结论的人不用滚过去 */
 .acc{background:#fff;border:1px solid #EDF0F4;border-radius:14px;margin-bottom:14px;overflow:hidden}
 .acc summary{list-style:none;cursor:pointer;padding:15px 18px;font-size:12.5px;font-weight:700;color:#7b848f;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.acc summary span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .acc summary::-webkit-details-marker{display:none}
 .acc summary::after{content:'展开';font-size:11px;font-weight:700;color:#D4537E;flex:0 0 auto}
 .acc[open] summary::after{content:'收起'}
 .accin{padding:2px 18px 16px;border-top:1px solid #F2F4F7}
 .accin p{margin:12px 0 0;font-size:13.5px;color:#4c535d;line-height:1.85}
 .accin p:first-child{margin-top:14px}
+/* 折叠区里的「你可以这样接」 */
+.accin .accdo{margin-top:20px;font-weight:700;color:#454c56}
+.accin .accdo-ul{margin:8px 0 0;padding-left:19px;font-size:13.5px;color:#4c535d;line-height:1.85}
+.accin .accdo-ul li{margin-bottom:9px}
+.accin .accdo-ul li:last-child{margin-bottom:0}
 
 /* 投入浓度的「人话」解读（原来那条和维度条重复的进度条去掉了） */
 .conc{font-size:13px;color:#4c535d;line-height:1.8;background:#fff;border-left:3px solid #ED93B1;border-radius:0 12px 12px 0;padding:12px 15px;margin-bottom:14px}
