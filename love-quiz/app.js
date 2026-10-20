@@ -72,7 +72,7 @@
   var BE = window.SB;
   var ROUTES = {
     '/api/config': function () {
-      return BE.rpc('love_config', {});
+      return BE.rpc('love_public_config', {});
     },
     '/api/redeem': function (b) {
       return BE.rpc('love_redeem', {
