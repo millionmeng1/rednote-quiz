@@ -28,14 +28,18 @@
     html += '<div class="phead">'
       + '<div class="pbrand">' + esc(cfg.shopName || '恋爱型号自测') + '</div>'
       + '<div class="plab">TA 的表达型号</div>'
-      + '<div class="pname">' + esc(ta.title) + '</div>'
-      + '<div class="psub">' + esc(ta.name) + ' · ' + esc(ta.sub) + '</div>'
+      /* 型号名当主标题，那句形容降成副标题 —— 和网页版一致：
+         读者要能第一眼说出「TA 是广播型」，而不是先读到一句文案。 */
+      + '<div class="pname">' + esc(ta.name) + '</div>'
+      + '<div class="ptitle">' + esc(ta.title) + '</div>'
+      + '<div class="psub">' + esc(ta.sub) + '</div>'
       + '<div class="pdiv"></div>'
       + '<div class="plab">你和 TA 的组合</div>'
       /* 注意：不能叫 pcombo —— 那个 class 第三段的匹配卡片已经在用（白底卡） */
       + '<div class="pduo">' + esc(m.name) + '</div>'
       + '<div class="pfit"><i style="width:' + an.pct + '%"></i></div>'
       + '<div class="pfitmeta"><span>贴合度</span><b>' + an.pct + '</b><em>' + esc(an.band) + '</em></div>'
+      + (an.bandNote ? '<div class="pfitnote">' + esc(an.bandNote) + '</div>' : '')
       + '</div>';
 
     /* ① TA 的型号：四个维度的条 */
@@ -81,17 +85,19 @@
     html += '<div class="pcard"><div class="pst">你真正需要的</div><p>' + esc(me.need) + '</p></div>';
 
     /* ③ 匹配 */
-    html += '<div class="psec">③ 你们卡在哪一段</div>';
+    html += '<div class="psec">③ 你们可能遇到的问题</div>';
     html += '<div class="pmname">' + esc(m.name) + '</div>';
     html += '<div class="pcard">'
       + '<div class="pcidx"><div class="pcidxt"><span>贴合度</span><b>' + an.pct + ' / 100</b></div>'
       + '<div class="pcidxb"><i style="width:' + an.pct + '%"></i></div>'
       + '<div class="pcidxn">贴合度只表示两种表达方式咬合得顺不顺，不代表这段关系好不好，也不预测结果。</div>'
       + '</div>';
-    html += '<div class="pcard"><div class="pst">最容易卡住你们的点</div><p>' + esc(m.stuck) + '</p></div>';
-    html += '<div class="pcard"><div class="pst">现在就能做的三件事</div>' + ul(m.tips) + '</div>';
+    html += '<div class="pcard"><div class="pst">你们之间可能出现的情况</div><p>' + esc(m.stuck) + '</p></div>';
+    html += '<div class="pcard"><div class="pst">可以努力的三个方向</div>' + ul(m.tips)
+      + '<div class="pnote">不用全做，挑一条顺手的开始就行。</div></div>';
 
-    html += '<div class="plast">表达方式是可以学的，接收方式也是。你们中间差的那部分，叫翻译。</div>';
+    html += '<div class="plast">表达方式是可以学的，接收方式也是。你们差的不是喜欢，是把话说明白的那几句。</div>';
+    html += '<div class="ptnote">以上是基于 20 道题推出来的倾向描述，说的是「可能」，不是对 TA 的判断，也不代表这段关系的结果。</div>';
     html += '<div class="pdisc">' + esc(QD.DISCLAIMER).replace(/\n/g, '<br>') + '</div>';
 
     /* 长图是被转发得最多的东西，上面不印任何微信号：一是外发素材上出现微信号

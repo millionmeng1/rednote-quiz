@@ -528,10 +528,13 @@
      结果页
      ---------------------------------------------------------------------------
      结构原则（改版时定的，别随手打乱）：
-       封面一屏给结论（型号 + 组合 + 贴合度 + 三个关键指标）→
-       ① TA 怎么表达 ② 你怎么喜欢 ③ 你们卡在哪 → 一句金句 → 动作/钩子 → 免责
+       封面（TA 的型号 + 你的型号 + 组合 + 贴合度解读）→
+       ① TA 怎么表达 ② 你怎么喜欢 ③ 你们可能遇到的问题 → 一句金句 → 动作/钩子 → 免责
      每一段最多一个「白卡」，其余用无卡片的正文 / 黄卡 / 粉卡区分层次，
      否则 8 张一模一样的白卡排下来读者眼睛没有落点。
+     2026-10-21：封面从「型号 + 三个等级格」改成「型号 + 你的型号 + 组合」，
+     三宫格删除（读者读不懂脱离上下文的「中等 / 偏高」）；③ 段标题与三条动作
+     全部改成「可能」句式，并在段末补免责。
      ========================================================================== */
   function resultHTML(an, mode) {
     var ta = an.ta, me = an.me, m = an.match, h = '';
@@ -563,26 +566,40 @@
           : '你还在门口站着，没真正走进去。';
 
     /* ---------- 封面：一屏之内把三件事说清 ---------- */
+    /* 2026-10-21 改版反馈：「说是型号测试，结果页的型号一点不明显」。
+       旧版把型号名塞在 hsub 里当小灰字（27px 的是那句 title），读者第一眼看到的
+       是一句形容，找不到「我是几号型号」。现在主视觉就是型号名本身，
+       title 降为一句解释，英文名做徽标补一个视觉锚点。 */
     h += '<div class="hero">';
     h += '<div class="hlab">TA 的表达型号</div>';
-    h += '<div class="hname">' + esc(ta.title) + '</div>';
-    h += '<div class="hsub">' + esc(ta.name) + ' · ' + esc(ta.sub) + '</div>';
+    h += '<div class="hname">' + esc(ta.name) + '<em>' + esc(ta.en || '') + '</em></div>';
+    h += '<div class="htitle">' + esc(ta.title) + '</div>';
+    h += '<div class="hsub">' + esc(ta.sub) + '</div>';
+
+    /* 「我是什么类型」直接在封面给出来 —— 旧版这里只有三个「中等 / 偏高」的格子，
+       读者看不出那三个词对应的是谁、也不知道自己属于哪一型。 */
+    h += '<div class="hdiv"></div>';
+    h += '<div class="hlab">你的喜欢型号</div>';
+    h += '<div class="hname2">' + esc(me.name) + '</div>';
+    h += '<div class="hsub">' + esc(me.def) + '</div>';
+
     h += '<div class="hdiv"></div>';
     h += '<div class="hlab">你和 TA 的组合</div>';
     h += '<div class="hcombo">' + esc(m.name) + '</div>';
     h += '<div class="fit"><i style="width:' + an.pct + '%"></i></div>';
     h += '<div class="fitmeta"><span>贴合度</span><b>' + an.pct + '</b><em>' + esc(an.band) + '</em></div>';
+    /* 68 分、「需要磨合」这两个信息单摆出来读者没法用，必须补一句「所以呢」 */
+    h += '<div class="fitnote">' + esc(an.bandNote || '') + '</div>';
     /* 声明放在封面卡里收尾：它很重要（不写清楚会被当成「不准」），
        但单独占一块放在正文中间会劝退 —— 读者还没读到内容就先被告知「这可能不对」。 */
     h += '<div class="heroNote">这份结果描述的是<b>你感受到的那个 TA</b>，不是 TA 本人，也不代表 TA 的真实想法。</div>';
     h += '</div>';
 
-    /* 三个最关键的数字，直接给人话等级 */
-    h += '<div class="kpi">';
-    h += '<div class="k"><b>' + L(ts.P) + '</b><span>TA 主动</span></div>';
-    h += '<div class="k"><b>' + L(ts.Q) + '</b><span>TA 把话说清</span></div>';
-    h += '<div class="k"><b>' + L(ms.M) + '</b><span>你要的确认</span></div>';
-    h += '</div>';
+    /* 旧版这里是一排三个「中等 / 偏高 / 中等」的格子。
+       2026-10-21 反馈：「这一块也不懂在表达什么」—— 三个等级词离开了题目和分数，
+       没有读者能看出它在说什么，而且「TA 主动 / TA 把话说清 / 你要的确认」
+       这三个标签本身也没解释。它的信息在 ① ② 两段的维度条里已经完整出现过一次，
+       这里删掉，封面直接给型号 + 组合，读者不用先解一道谜。 */
 
     h += '<div class="qcard">' + esc(ta.def) + '</div>';
 
@@ -597,7 +614,7 @@
     });
     h += '</div>';
 
-    h += '<div class="blk warn"><div class="lb">你最容易误读成</div><p>' + esc(ta.miss) + '</p></div>';
+    h += '<div class="blk warn"><div class="lb">你可能读成</div><p>' + esc(ta.miss) + '</p></div>';
 
     /* 解释性内容 + 「你可以这样接」收进折叠区：想深挖的人点开，只看结论的人不用滚过去。
        ta.do 不能删 —— 这三条是针对这个型号的接法，和 ③ 段那个组合级的动作不重复。 */
@@ -622,7 +639,7 @@
 
     /* 标题刻意和 ① 的「你最容易误读成」区分开：那一块说的是「你怎么看 TA」，
        这一块说的是「你一直以来的模式」，否则读者会觉得同一句话说两遍。 */
-    h += '<div class="blk warn"><div class="lb">你一直以来的盲区</div><p>' + esc(me.blind) + '</p></div>';
+    h += '<div class="blk warn"><div class="lb">你可能没注意到的部分</div><p>' + esc(me.blind) + '</p></div>';
     /* need 本身以「你需要…」开头，前面别再拼「你真正需要的，是」 */
     h += '<div class="qcard">' + esc(me.need) + '</div>';
 
@@ -631,25 +648,32 @@
     h += '</div></details>';
     h += '</div>';
 
-    /* ---------- ③ 你们卡在哪一段 ---------- */
-    h += '<div class="sec"><div class="sect">③ 你们卡在哪一段</div>';
+    /* ---------- ③ 你们可能遇到的问题 ---------- */
+    /* 2026-10-21 反馈：原来叫「你们卡在哪一段」，读起来像给这段关系判了刑。
+       同一份内容改成「可能遇到的问题」，说的是倾向不是结论，也不容易被截图挂出去。 */
+    h += '<div class="sec"><div class="sect">③ 你们可能遇到的问题</div>';
     h += '<div class="swap">'
       + '<div class="sw swa"><div class="swlab">TA 在给</div><div class="swval">' + TA_GIVE[giveKey] + '</div></div>'
       + '<div class="swarrow">↔</div>'
       + '<div class="sw swb"><div class="swlab">你在等</div><div class="swval">' + ME_WAIT[waitKey] + '</div></div>'
       + '</div>';
-    h += '<div class="qbox"><div class="qlab">所以你们卡在这里</div><p class="q">' + esc(m.stuck) + '</p></div>';
+    h += '<div class="qbox"><div class="qlab">你们之间可能出现的情况</div><p class="q">' + esc(m.stuck) + '</p></div>';
 
-    /* 三条动作做成可勾选的步骤 —— 勾完存本地，回来还在 */
-    h += '<div class="steps"><div class="stepshead">现在就能做的三件事<em id="fixcount">今天完成了 0 / 3</em></div><ul id="fixlist">';
+    /* 三条做成可勾选的方向 —— 勾完存本地，回来还在。
+       标题从「现在就能做的三件事」改成「可以努力的三个方向」：
+       前者像在下命令（还带个 0/3 的进度条），后者才是建议的口吻。 */
+    h += '<div class="steps"><div class="stepshead">可以努力的三个方向<em id="fixcount">已经试了 0 / 3</em></div><ul id="fixlist">';
     m.tips.forEach(function (t, i) {
       h += '<li data-i="' + i + '"' + (S.checked && S.checked[i] ? ' class="on"' : '') + '>'
         + '<i class="tick"></i><p>' + esc(t) + '</p></li>';
     });
-    h += '</ul></div>';
+    h += '</ul><div class="stepsnote">不用全做，挑一条顺手的开始就行。</div></div>';
+
+    /* 第三段必须有一条明确的免责：这一段最容易被读成「你在给我下判断」 */
+    h += '<div class="tnote">以上是基于 20 道题推出来的倾向描述，说的是「可能」，不是对 TA 的判断，也不代表这段关系的结果。真正决定走向的，始终是你们两个人怎么沟通。</div>';
     h += '</div>';
 
-    h += '<div class="last">表达方式是可以学的，接收方式也是。你们中间差的那部分，叫翻译。</div>';
+    h += '<div class="last">表达方式是可以学的，接收方式也是。你们差的不是喜欢，是把话说明白的那几句。</div>';
 
     if (mine) {
       /* 复购钩子：测完 TA 的人，下一步一定想知道「那 TA 眼里的我呢」 */
@@ -657,7 +681,10 @@
         + '<button class="btn gold sm" id="againBtn" type="button">给 TA 也拍一份 →</button></div>';
       /* 这一款不做返现，好评只能靠一句零成本的话去要 */
       h += '<div class="praiseline">说中了的话，回去给个好评吧 —— 那是我继续做下去的理由。</div>';
-      if (!S.resultAt && !S.finished) {
+      /* 永久码永远给「再测一次」：它的作用就是反复演示 / 自测，
+         旧版这里只判断 !S.resultAt && !S.finished，交卷后 S.finished 已经是 true，
+         于是老板自己那张码测完一次就再也点不到重测（2026-10-21 确认要开）。 */
+      if (S.unlimited || (!S.resultAt && !S.finished)) {
         h += '<button class="btn ghost sm" id="retestBtn">再测一次</button>';
       }
       h += '<div class="switchrow">手上还有一张新密码？'
@@ -672,7 +699,7 @@
     var n = 0;
     Object.keys(S.checked).forEach(function (k) { if (S.checked[k]) n++; });
     var el = $('fixcount');
-    if (el) el.textContent = '今天完成了 ' + n + ' / 3';
+    if (el) el.textContent = '已经试了 ' + n + ' / 3';
   }
 
   function renderResult() {
@@ -751,7 +778,7 @@
       if (btn) { btn.disabled = false; btn.textContent = '再测一次'; }
       if (r && r.ok && r.allow) {
         S.answers = new Array(N).fill(0);
-        S.idx = 0; S.an = null; S.checked = {}; S.share = null; S.finished = false;
+        S.idx = 0; S.an = null; S.checked = {}; S.share = null; S.finished = false; S.resultAt = null;
         try { localStorage.removeItem(K_RESULT); } catch (e) { }
         clearProgress();
         history.replaceState(null, '', '#/quiz');

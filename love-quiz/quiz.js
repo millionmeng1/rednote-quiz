@@ -71,18 +71,27 @@
     var match = QD.MATCH[taHit.index + '-' + meHit.index] || {
       name: '两种不太一样的表达方式', pct: 68,
       stuck: '你们表达和接收喜欢的方式不在同一个频道上，需要一点翻译。',
-      tips: ['把你要的东西说具体，别用暗示。', '看他做过的事，不只看他说过的话。', '给这件事定一个期限，到期按事实判断。']
+      tips: ['把你要的东西说具体，别用暗示。', '看 TA 做过的事，不只看 TA 说过的话。', '给这件事定一个期限，到期按事实判断。']
     };
 
+    /* 贴合度的等级词。
+       旧版这里写「需要翻译」，是内部概念：读者看到一个不知道好坏、也不知道
+       该拿它怎么办的词，只会觉得模糊（而且容易理解成「你俩不行」）。
+       现在改成直白的三档 + 一句解释，把「这意味着什么」说清楚；
+       「翻译」这个词只留在最后那句金句里当比喻，不承担解释功能。 */
     var pct = Math.max(0, Math.min(100, match.pct | 0));
-    var band = pct >= 85 ? '很顺' : (pct >= 72 ? '比较顺' : (pct >= 60 ? '需要翻译' : '需要多花点力气'));
+    var band = pct >= 85 ? '很合拍' : (pct >= 72 ? '比较合拍' : (pct >= 60 ? '需要磨合' : '差异比较明显'));
+    var bandNote = pct >= 85 ? '你们表达和接收喜欢的方式本来就对得上，不太需要额外解释。'
+      : pct >= 72 ? '大体在一个频道上，只在个别地方会错意，说开一次就能过去。'
+        : pct >= 60 ? '你们表达喜欢的方式不太一样，同一件事容易被读成两个意思，互相翻译一下会顺很多。'
+          : '你们的节奏差得比较远，容易各自理解成不同的意思，把话说明白比自己猜有用。';
     var concentration = meScores.N; /* 投入浓度：结果页单独展示的一条 */
 
     return {
       taScores: taScores, meScores: meScores,
       ta: ta, taIdx: taHit.index, taDist: taHit.dist,
       me: me, meIdx: meHit.index, meDist: meHit.dist,
-      match: match, pct: pct, band: band,
+      match: match, pct: pct, band: band, bandNote: bandNote,
       concentration: concentration,
       color: DIMCOLOR[QD.TA_DIMS[0]],
       title: ta.title,

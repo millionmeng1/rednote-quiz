@@ -6,8 +6,10 @@
 #poster .phead{background:#D4537E;color:#fff;padding:52px 44px 46px;text-align:center}
 #poster .pbrand{font-size:20px;letter-spacing:.22em;opacity:.82;margin-bottom:26px}
 #poster .plab{font-size:23px;letter-spacing:.2em;opacity:.85;margin-bottom:12px}
-#poster .pname{font-size:58px;font-weight:700;letter-spacing:-1px;line-height:1.22}
-#poster .psub{font-size:22px;opacity:.9;margin-top:16px;line-height:1.6}
+#poster .pname{font-size:58px;font-weight:800;letter-spacing:-1px;line-height:1.22}
+/* 型号名的副标题：那句形容从主标题降级到这里 */
+#poster .ptitle{font-size:28px;font-weight:600;opacity:.94;margin-top:14px;line-height:1.55}
+#poster .psub{font-size:22px;opacity:.82;margin-top:12px;line-height:1.6}
 #poster .pflag{display:inline-block;margin-top:22px;border:1.5px solid rgba(255,255,255,.55);border-radius:999px;padding:7px 22px;font-size:20px}
 /* 组合名 + 贴合度：分享图上也要第一眼看到 */
 #poster .pdiv{height:1px;background:rgba(255,255,255,.26);margin:36px 0 30px}
@@ -17,6 +19,7 @@
 #poster .pfitmeta{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:18px;font-size:20px;opacity:.95}
 #poster .pfitmeta b{font-size:38px;font-weight:800;line-height:1}
 #poster .pfitmeta em{font-style:normal;border:1.5px solid rgba(255,255,255,.5);border-radius:999px;padding:5px 18px;font-size:18px;opacity:.95}
+#poster .pfitnote{margin-top:16px;font-size:21px;opacity:.86;line-height:1.7}
 
 /* 卡片 */
 #poster .pcard{background:#fff;margin:22px 24px 0;border-radius:20px;padding:34px 32px}
@@ -114,6 +117,10 @@
 #poster .pcidxb{height:11px;background:#e5e8ee;border-radius:99px;overflow:hidden}
 #poster .pcidxb i{display:block;height:100%;background:linear-gradient(90deg,#F4C0D1,#D4537E);border-radius:99px}
 #poster .pcidxn{font-size:19px;color:#7b848f;margin-top:12px;line-height:1.7}
+/* 三条方向下面那句「不用全做」 */
+#poster .pnote{margin-top:18px;padding-top:16px;border-top:1px dashed #EFE2E8;font-size:19px;color:#a3abb5;line-height:1.7}
+/* ③ 段末免责，和 pudisc 分开：这条是内容层面的，不替代底部总声明 */
+#poster .ptnote{margin:18px 24px 0;font-size:18px;color:#9aa2ac;line-height:1.8;text-align:center;padding:0 20px}
 
 /* 误读 / 盲区这类提醒块 */
 #poster .pcard.pwarn{background:#FFFAF0;border:1px solid #F0DFC0}

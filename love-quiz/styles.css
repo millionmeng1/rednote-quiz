@@ -251,10 +251,16 @@ h1{font-size:26px;line-height:1.38;margin:0 0 12px;letter-spacing:-.5px}
   padding:24px 20px 20px; margin-bottom:12px;
   box-shadow:0 1px 2px rgba(20,24,30,.04), 0 16px 36px -20px rgba(114,36,62,.30);
 }
-.hlab{font-size:10.5px;font-weight:700;letter-spacing:.2em;color:#BC7E93;margin-bottom:7px}
-.hname{font-size:27px;font-weight:800;color:#1c2026;line-height:1.3;letter-spacing:-.8px}
-.hsub{font-size:12.5px;color:#8b939d;margin-top:6px;letter-spacing:.02em}
-.hdiv{height:1px;background:linear-gradient(90deg,#F2D7E2,rgba(242,215,226,0));margin:20px 0 18px}
+.hlab{font-size:10.5px;font-weight:700;letter-spacing:.2em;color:#BC7E93;margin-bottom:8px}
+/* 型号名是这一页的主角：32px、深玫红、后面跟一个英文徽标做视觉锚点。
+   旧版把「广播型」放在 12.5px 的灰色副行里，读者反馈「说是型号测试，
+   结果页的型号一点不明显」——问题不在字号，在于主次排反了。 */
+.hname{font-size:32px;font-weight:800;color:#B03A63;line-height:1.2;letter-spacing:-.6px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.hname em{font-style:normal;font-size:9.5px;font-weight:700;letter-spacing:.14em;color:#C9789A;background:#FBEAF0;border:1px solid #F2D6E2;padding:3px 7px;border-radius:6px;transform:translateY(2px)}
+.hname2{font-size:23px;font-weight:800;color:#1c2026;line-height:1.3;letter-spacing:-.5px}
+.htitle{font-size:16px;font-weight:600;color:#3c434d;line-height:1.6;margin-top:10px}
+.hsub{font-size:12.5px;color:#8b939d;margin-top:6px;letter-spacing:.02em;line-height:1.72}
+.hdiv{height:1px;background:linear-gradient(90deg,#F2D7E2,rgba(242,215,226,0));margin:19px 0 16px}
 .hcombo{font-size:18.5px;font-weight:700;color:#72243E;line-height:1.52;margin-bottom:13px}
 
 .fit{height:9px;border-radius:5px;background:#F4E7ED;overflow:hidden}
@@ -262,14 +268,16 @@ h1{font-size:26px;line-height:1.38;margin:0 0 12px;letter-spacing:-.5px}
 .fitmeta{display:flex;align-items:center;gap:8px;margin-top:9px;font-size:11.5px;color:#8b939d}
 .fitmeta b{font-size:19px;font-weight:800;color:#D4537E;line-height:1;letter-spacing:-.5px}
 .fitmeta em{font-style:normal;font-weight:700;font-size:11.5px;color:#72243E;background:#FBEAF0;padding:2px 9px;border-radius:20px;letter-spacing:.02em}
+/* 分数 + 等级词之后必须有一句「所以呢」—— 68 分、需要磨合，读者拿这两样没法用 */
+.fitnote{margin-top:9px;font-size:12px;color:#8b7b83;line-height:1.75}
 
 /* 声明收在封面卡底部：像一个注脚，读起来是「补充」，不是「免责警告」 */
 .heroNote{margin-top:15px;padding-top:12px;border-top:1px dashed #F0DCE5;font-size:10.5px;color:#A7919B;line-height:1.7}
 .heroNote b{color:#7d6470;font-weight:700}
 
 /* 三个关键指标：用等级词，不用裸分数。
-   颜色刻意用中性墨色 —— 「很高 / 很低」本身不是好坏，
-   全用粉色会让读者以为三个都是好消息。 */
+   2026-10-21 起前端已不再使用这一组（读者看不懂脱离上下文的「中等 / 偏高」），
+   样式先留着，方便以后做后台调试视图。 */
 .kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
 .kpi .k{background:#fff;border:1px solid #EDF0F4;border-radius:14px;padding:12px 4px;text-align:center}
 .kpi .k b{display:block;font-size:15px;font-weight:800;color:#2b3038;line-height:1.3}
@@ -333,3 +341,7 @@ h1{font-size:26px;line-height:1.38;margin:0 0 12px;letter-spacing:-.5px}
 #fixlist li.on .tick{background:#D4537E;border-color:#D4537E}
 #fixlist li.on .tick::after{content:'';position:absolute;left:6px;top:2.5px;width:4px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(43deg)}
 #fixlist li.on p{color:#a3abb5;text-decoration:line-through;text-decoration-color:#E3CAD4}
+/* 「挑一条开始就行」—— 三条方向是建议，不是待办清单 */
+.stepsnote{margin-top:14px;padding-top:12px;border-top:1px dashed #F0DCE5;font-size:11.5px;color:#a3abb5;line-height:1.7}
+/* ③ 段末的免责：这一段最容易被当成「给我下判断」，必须在段落止住 */
+.tnote{font-size:11.5px;color:#9aa2ac;line-height:1.85;background:#fff;border-radius:12px;padding:13px 15px;margin-bottom:14px}
