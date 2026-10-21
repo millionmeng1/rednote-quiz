@@ -587,7 +587,9 @@
     h += '<div class="hlab">你和 TA 的组合</div>';
     h += '<div class="hcombo">' + esc(m.name) + '</div>';
     h += '<div class="fit"><i style="width:' + an.pct + '%"></i></div>';
-    h += '<div class="fitmeta"><span>贴合度</span><b>' + an.pct + '</b><em>' + esc(an.band) + '</em></div>';
+    /* 「贴合度」三个字容易被读成「你俩能不能成」——
+       读者看到 66 分第一反应是关系被判了分。前面加「表达」把范围收窄。 */
+    h += '<div class="fitmeta"><span>表达贴合度</span><b>' + an.pct + '</b><em>' + esc(an.band) + '</em></div>';
     /* 68 分、「需要磨合」这两个信息单摆出来读者没法用，必须补一句「所以呢」 */
     h += '<div class="fitnote">' + esc(an.bandNote || '') + '</div>';
     /* 声明放在封面卡里收尾：它很重要（不写清楚会被当成「不准」），

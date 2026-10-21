@@ -38,7 +38,7 @@
       /* 注意：不能叫 pcombo —— 那个 class 第三段的匹配卡片已经在用（白底卡） */
       + '<div class="pduo">' + esc(m.name) + '</div>'
       + '<div class="pfit"><i style="width:' + an.pct + '%"></i></div>'
-      + '<div class="pfitmeta"><span>贴合度</span><b>' + an.pct + '</b><em>' + esc(an.band) + '</em></div>'
+      + '<div class="pfitmeta"><span>表达贴合度</span><b>' + an.pct + '</b><em>' + esc(an.band) + '</em></div>'
       + (an.bandNote ? '<div class="pfitnote">' + esc(an.bandNote) + '</div>' : '')
       + '</div>';
 
@@ -88,7 +88,7 @@
     html += '<div class="psec">③ 你们可能遇到的问题</div>';
     html += '<div class="pmname">' + esc(m.name) + '</div>';
     html += '<div class="pcard">'
-      + '<div class="pcidx"><div class="pcidxt"><span>贴合度</span><b>' + an.pct + ' / 100</b></div>'
+      + '<div class="pcidx"><div class="pcidxt"><span>表达贴合度</span><b>' + an.pct + ' / 100</b></div>'
       + '<div class="pcidxb"><i style="width:' + an.pct + '%"></i></div>'
       + '<div class="pcidxn">贴合度只表示两种表达方式咬合得顺不顺，不代表这段关系好不好，也不预测结果。</div>'
       + '</div>';
