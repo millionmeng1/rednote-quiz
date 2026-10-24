@@ -77,7 +77,7 @@
 
   /* 设备标识：只用来做「输错太多次先挡一会儿」的软限流，不含任何个人信息 */
   function device() {
-    var k = 'lei_dev_v1', v = '';
+    var k = 'love_dev_v1', v = '';
     try { v = localStorage.getItem(k) || ''; } catch (e) { v = ''; }
     if (!v) {
       v = 'd' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);

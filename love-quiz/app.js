@@ -203,6 +203,35 @@
     var b = $('buyBtn') || $('barBuyBtn') || $('mBuyBtn');
     if (b) b.onclick = openBuyModal;
   }
+
+  /* 扫码直达购买：扫长图二维码进来的人本来就是想买自己的一份，
+     配了商品链接就一进门直接送过去，中间不插「去小红书搜」。
+     留一屏兜底（含可点按钮）是因为内置浏览器偶尔会拦脚本跳转。 */
+  function goBuy(auto) {
+    var v = $('view-gate');
+    if (v) {
+      v.innerHTML =
+        '<div class="brand">' + esc(CFG.shopName || '恋爱型号自测') + '</div>'
+        + '<h1>' + esc(CFG.quizTitle || 'TA 的喜欢，是哪一种型号？') + '</h1>'
+        + '<p class="lead">正在打开小红书商品页…</p>'
+        + '<a class="btn gold" style="text-decoration:none;display:block;text-align:center;max-width:320px;margin:18px auto 0"'
+        + ' href="' + esc(CFG.buyUrl) + '" rel="noopener">'
+        + esc(CFG.buyText || '去小红书拍一份 →') + '</a>'
+        + '<div class="buytip dim">没自动跳转，就点上面这个按钮</div>';
+      show('view-gate');
+    }
+    if (auto) {
+      setTimeout(function () { try { location.href = CFG.buyUrl; } catch (e) { } }, 600);
+    }
+  }
+
+  /* 只自动跳一次：否则买家从商品页按返回键回来，又会被送走，来回弹。 */
+  function qrJumped() {
+    try { return sessionStorage.getItem('love_qrjump_v1') === '1'; } catch (e) { return false; }
+  }
+  function markQrJump() {
+    try { sessionStorage.setItem('love_qrjump_v1', '1'); } catch (e) { }
+  }
   function openBuyModal() {
     var key = shopKey();
     var h = '<p>这个测评要一张测试密码才能开始，密码在小红书店铺里自动发货。</p>'
@@ -1035,6 +1064,13 @@
     try { S.unlimited = localStorage.getItem(K_UNL) === '1'; } catch (e) { S.unlimited = false; }
     var h = location.hash.replace(/^#\/?/, '');
     if (h.indexOf('r/') === 0) { showShared(h.slice(2)); return; }
+
+    /* 扫二维码进来 + 后台配了商品链接 → 直接送商品页，不用再点一次按钮 */
+    if (!S.token && fromQR() && CFG.buyUrl && !qrJumped()) {
+      markQrJump();
+      goBuy(true);
+      return;
+    }
 
     var check = S.token
       ? api('/api/session', { method: 'POST', body: { token: S.token } }).then(function (r) {

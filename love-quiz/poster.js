@@ -105,37 +105,77 @@
     var shop = cfg.shopName && String(cfg.shopName).indexOf('请到管理后台') < 0
       ? String(cfg.shopName) : '';
 
+    /* 配了商品链接时，扫码的人会被站点直接送去商品页 —— 那时才敢写「扫码直接拍」；
+       没配链接 QR 只能到首页，文案退回「扫码打开测评」，别承诺做不到的事。 */
+    var direct = !!cfg.buyUrl;
     html += '<div class="pfoot">'
       + '<div class="f1">' + esc(cfg.quizTitle || 'TA 的喜欢，是哪一种型号？') + '</div>'
       + '<div class="f2">出自「' + esc(shop || '恋爱型号自测') + '」<br>20 题 · TA 的型号 + 你的型号 + 你们的咬合方式</div>'
       + '<div class="pqr">'
       + '<canvas id="p-qr" class="pqrc"></canvas>'
-      + '<div class="pqrt">扫码打开测评<br>拍下自动发货，输密码就能测</div>'
+      + (direct
+        ? '<div class="pqrt">扫码直接拍<br>付款后密码自动发到订单</div>'
+        : '<div class="pqrt">扫码打开测评<br>拍下自动发货，输密码就能测</div>')
       + '</div>'
-      /* 图上点不了链接，所以把「去哪儿买」写成一句能照做的搜索指令 */
-      + (shop ? '<div class="f3">还没有测试密码？去小红书搜「' + esc(shop) + '」，拍下自动发货</div>' : '')
+      + (direct
+        ? '<div class="f3">想测自己的？扫右边的码，直达商品页，拍下自动发货</div>'
+        : (shop ? '<div class="f3">还没有测试密码？去小红书搜「' + esc(shop) + '」，拍下自动发货</div>' : ''))
       + '</div>';
 
     return html;
   }
 
-  /* 二维码：模块矩阵来自 vendor/qr.js（由 _quiz_tests/_gen_qr.py 生成）。
-     必须用 canvas 手绘，不能用 <img>：外链图片会让 html2canvas 导出时污染
-     canvas（toDataURL 直接抛异常），内联 SVG 又容易糊边。 */
-  function drawQR() {
+  /* 二维码扫出来去哪儿 —— 两条路都开着，互为兜底：
+       · 后台配了商品链接 → 码直接指向商品页，扫完一步能拍（新图走这条）
+       · 没配 → 码指向本站并带 ?f=qr，站点认得这个标记会把人送去商品页（老图走这条）
+     这样商品链接以后换了，不用重出图；老长图也永远不会失效。 */
+  function qrTarget(cfg) {
+    var buy = cfg && cfg.buyUrl ? String(cfg.buyUrl).trim() : '';
+    /* 商品链接一个字都别加 —— 小红书短链（xhslink）带多余参数会打不开 */
+    if (/^https?:\/\//i.test(buy)) return buy;
+    var site = location.href.split('#')[0].split('?')[0];
+    return site + '?f=qr';
+  }
+
+  /* 运行时编码：vendor/qr-gen.js（qrcode-generator, MIT）。
+     以前是 python 预生成一份写死的矩阵，换域名 / 换商品链接就得重跑脚本重出图，
+     而且那份矩阵指向的域名早就变了（这份还指着旧镜像站）。改成运行时生成，
+     编码内容跟着后台配置走，换什么都不用再动图。失败就退回预生成矩阵。 */
+  function qrMatrix(text) {
+    if (typeof w.qrcode !== 'function') return null;
+    try {
+      var q = w.qrcode(0, 'M');              /* 0 = 自动选版本，M = 中等纠错 */
+      q.addData(text);
+      q.make();
+      var n = q.getModuleCount();
+      if (!n) return null;
+      var s = '';
+      for (var r = 0; r < n; r++) {
+        for (var c = 0; c < n; c++) s += q.isDark(r, c) ? '1' : '0';
+      }
+      return { size: n, matrix: s, target: text };
+    } catch (e) { return null; }
+  }
+
+  /* 必须用 canvas 手绘，不能用 <img>：外链图片会让 html2canvas 导出时污染
+     canvas（toDataURL 直接抛异常），内联 SVG 又容易糊边。
+     整数倍格子 + 自己补 2 格静默区，保证缩到小尺寸也扫得出来。 */
+  function drawQR(cfg) {
     var cv = document.getElementById('p-qr');
     var box = document.querySelector('#poster .pqr');
-    var q = w.QR;
-
     if (!cv) return;
+
+    var q = qrMatrix(qrTarget(cfg)) || w.QR;
     if (!q || !q.matrix || !q.size || q.matrix.length !== q.size * q.size) {
       /* 拿不到矩阵就整块不印 —— 宁可不出现，也不要印一个扫不出来的方块 */
       if (box) box.style.display = 'none';
       return;
     }
 
-    var CELL = 5;                            /* 每格 5 CSS px */
-    var PX = q.size * CELL;
+    var PAD = 2;                             /* 静默区：二维码四周必须留白才扫得动 */
+    var TOTAL = q.size + PAD * 2;
+    var CELL = Math.max(3, Math.floor(200 / TOTAL));   /* 取整格，不然格子会糊 */
+    var PX = TOTAL * CELL;
     var dpr = 2;
     cv.width = PX * dpr; cv.height = PX * dpr;
     cv.style.width = PX + 'px'; cv.style.height = PX + 'px';
@@ -145,10 +185,11 @@
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, PX, PX);
     ctx.fillStyle = '#111111';
+    var off = PAD * CELL;
     for (var i = 0; i < q.size; i++) {
       for (var j = 0; j < q.size; j++) {
         if (q.matrix.charCodeAt(i * q.size + j) === 49 /* '1' */) {
-          ctx.fillRect(j * CELL, i * CELL, CELL, CELL);
+          ctx.fillRect(off + j * CELL, off + i * CELL, CELL, CELL);
         }
       }
     }
@@ -184,7 +225,7 @@
 
     drawBars('p-bars-ta', an.taScores, QD.TA_DIMS);
     drawBars('p-bars-me', an.meScores, QD.ME_DIMS);
-    drawQR();
+    drawQR(cfg);
 
     var H = node.offsetHeight || 4000;
     var maxArea = 9.2e6;                      /* 兼容 iOS 的 canvas 面积上限 */
