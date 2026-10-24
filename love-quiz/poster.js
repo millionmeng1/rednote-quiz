@@ -114,7 +114,7 @@
       + '<div class="pqr">'
       + '<canvas id="p-qr" class="pqrc"></canvas>'
       + (direct
-        ? '<div class="pqrt">扫码直接拍<br>付款后密码自动发到订单</div>'
+        ? '<div class="pqrt">扫码直接拍<br>付款后自动发货</div>'
         : '<div class="pqrt">扫码打开测评<br>拍下自动发货，输密码就能测</div>')
       + '</div>'
       + (direct
