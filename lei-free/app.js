@@ -810,6 +810,43 @@
     return !/MicroMessenger|Weibo|QQ\/|Xiaohongshu|xhs|Rednote|RedNote|DingTalk|AlipayClient/i.test(ua);
   }
 
+  /* 为什么要把长图传到网上再让人长按：
+     Android 的 WebView 长按菜单，判断"这是不是一张能存的图"普遍用
+     URLUtil.isNetworkUrl() —— 只认 http/https。blob: 和 data: 会被判成
+     无效地址，于是长按什么都不弹（这正是"点了没反应"的底层原因）。
+     所以这里把长图传到 Supabase Storage 换一个 https 地址；
+     没配 Storage（bucket 不存在 / 没给上传权限）就静默退回本地图，
+     功能和现在完全一样，不会因为没配就报错。 */
+  function uploadPoster(dataURL) {
+    var base = String(window.SUPABASE_URL || '').replace(/\/+$/, '');
+    var key0 = String(window.SUPABASE_ANON_KEY || '');
+    if (!base || !key0 || typeof fetch !== 'function' || typeof AbortController !== 'function') {
+      return Promise.resolve('');
+    }
+    var blob;
+    try { blob = PO.dataURLtoBlob(dataURL); } catch (e) { return Promise.resolve(''); }
+    if (!blob || !blob.size || blob.size > 9 * 1024 * 1024) return Promise.resolve('');
+
+    var name = 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 11) + '.png';
+    var ctrl = new AbortController();
+    var timer = setTimeout(function () { try { ctrl.abort(); } catch (e) { } }, 7000);
+    return fetch(base + '/storage/v1/object/posters/' + name, {
+      method: 'POST',
+      headers: {
+        apikey: key0,
+        Authorization: 'Bearer ' + key0,
+        'Content-Type': 'image/png',
+        'x-upsert': 'false'
+      },
+      body: blob,
+      signal: ctrl.signal
+    }).then(function (r) {
+      clearTimeout(timer);
+      if (!r.ok) return '';
+      return base + '/storage/v1/object/public/posters/' + name;
+    }).catch(function () { clearTimeout(timer); return ''; });
+  }
+
   function saveImage() {
     if (!S.an) return;
     if (typeof html2canvas !== 'function') {
@@ -841,20 +878,25 @@
      这里因此不摆任何「保存方式」按钮，只把图铺满 + 一句话说清怎么存，
      免得买家在三条路之间挑，挑错了还以为是自己手机的问题。 */
   function openPreview(url, name) {
+    /* 先用本地 blob 立刻显示（不等网络），随后如果传上去了就把 src 换成
+       https 地址 —— 换的只是地址，画面一模一样，但长按能不能存全靠它。 */
+    var isRemote = /^https?:\/\//i.test(url);
     var showUrl = url, objectUrl = null;
-    try {
-      objectUrl = URL.createObjectURL(PO.dataURLtoBlob(url));
-      showUrl = objectUrl;
-    } catch (e) { /* 拿不到 blob 就退回 dataURL，不影响长按 */ }
+    if (!isRemote) {
+      try {
+        objectUrl = URL.createObjectURL(PO.dataURLtoBlob(url));
+        showUrl = objectUrl;
+      } catch (e) { /* 拿不到 blob 就退回 dataURL，不影响长按 */ }
+    }
 
     var d = document.createElement('div');
     d.className = 'pv';
     d.innerHTML =
       '<button class="pvx" id="pvClose" type="button" aria-label="关闭">×</button>'
-      + '<div class="pvbar"><b>长按图片 → 保存图片</b></div>'
+      + '<div class="pvbar"><b>按住图片 2 秒 →「保存图片」</b></div>'
       + '<div class="pvbody"><img src="' + showUrl + '" alt="我的测评结果长图">'
-      + '<div class="hint">手指按住上面这张图别松，等菜单弹出来，点「保存图片」。<br>'
-      + '长按没反应：点右上角「···」→「用浏览器打开」，再点一次「保存长图」。</div>'
+      + '<div class="hint">手指按在图上别松开，等菜单弹出来，点菜单里的「保存图片」或「存储到照片」。<br>'
+      + '按了没菜单：点右上角「···」→「用浏览器打开」，在浏览器里再点一次「保存长图」。</div>'
       + '</div>';
     document.body.appendChild(d);
 
@@ -863,6 +905,14 @@
       if (objectUrl) { try { URL.revokeObjectURL(objectUrl); } catch (e) { } }
     }
     d.querySelector('#pvClose').onclick = close;
+
+    if (!isRemote) {
+      var img = d.querySelector('img');
+      uploadPoster(url).then(function (remote) {
+        /* 只有在浮层还开着、且真的传成功了才换 —— 换失败保持本地图 */
+        if (remote && img && img.parentNode && d.parentNode) img.src = remote;
+      });
+    }
   }
 
   /* 好评有礼 */
