@@ -28,6 +28,32 @@
     } catch (e) { return ''; }
   }
 
+  /* 把「这一份结果」写进地址栏。
+     为什么必须写：买家点右上角「··· → 在浏览器打开」时，系统打开的是**当前这个地址**。
+     地址还是 ?k=口令链接的话，浏览器里就是全新一轮（结果存在原来那个 App 里，
+     根本带不过去），他会以为东西坏了。换成 ?r=分享码&own=1 之后，
+     不管用哪种方式跳出去（在浏览器打开 / 复制链接 / 收藏），打开的都是这份结果。
+     口令 k= 要一起留着：重测、换人测还要靠它进门。 */
+  function urlWithResult(share) {
+    if (!share) return '';
+    var q = [];
+    var k = S.code || codeFromUrl();
+    if (k) q.push('k=' + encodeURIComponent(k));
+    q.push('r=' + encodeURIComponent(share));
+    q.push('own=1');
+    return location.pathname + '?' + q.join('&');
+  }
+  /* 重测 / 换人测时把结果码摘掉，只留口令 */
+  function stripResult(hash) {
+    var k = S.code || codeFromUrl();
+    return location.pathname + (k ? '?k=' + encodeURIComponent(k) : '') + (hash || '');
+  }
+  function setResultUrl() {
+    var u = urlWithResult(S.share);
+    if (!u) return;
+    try { history.replaceState(null, '', u + '#/result'); } catch (e) { }
+  }
+
   /* 读地址栏参数（通用版）。分享链接以前用 hash（#/r/xxxx），
      小红书 / 微信的内置浏览器转发时会把 # 后面的整段吃掉，链接发出去
      就成了裸域名 —— 打开直接落在口令屏，看起来像「分享功能是坏的」。
@@ -472,6 +498,9 @@
   /* ---------------- 答题 ---------------- */
   function startQuiz() {
     S.mode = 'own';
+    /* 重测 / 换人测：把上一份结果的分享码从地址里摘掉。
+       不摘的话，做完第一题随手一刷新，又会被 ?r= 拉回上一份结果。 */
+    try { history.replaceState(null, '', stripResult('#/quiz')); } catch (e) { }
     $('actbar').classList.add('hide');
     /* 全新开始时尝试接上本地进度（没答过任何一题才续，避免覆盖正在进行的作答） */
     var resumed = 0;
@@ -577,6 +606,7 @@
       if (r && r.ok && r.share) {
         S.share = r.share;
         S.resultAt = r.resultAt || S.resultAt || new Date().toISOString();
+        setResultUrl();
         /* 服务端说「这张码早就出过结果了」：说明这次是重复提交（绕过了入口硬答的，
            或者网络慢、点了两次）。把原来那份答案换回来重画 —— 不然页面显示的是
            他刚瞎选的，而分享链接指向的还是原来那份，长图和链接会对不上。 */
@@ -586,6 +616,9 @@
           saveResult();
           renderResult();
           toast('这是你上次测的结果 —— 想重新测，点结果页底部的「再测一次」', 3600);
+          /* 服务端把原来那份答案换了回来 —— 地址里的分享码也要跟着换，
+             不然浏览器里打开的是旧码、看到的还是刚才那份。 */
+          setResultUrl();
           return;
         }
         saveResult();
@@ -953,7 +986,7 @@
     S.finished = true;
     S.restored = true;
     S.restoredAt = saved.t || null;
-    history.replaceState(null, '', '#/result');
+    history.replaceState(null, '', (urlWithResult(S.share) || location.pathname) + '#/result');
     renderResult();
   }
 
@@ -1344,6 +1377,18 @@
         S.restored = false; S.restoredAt = null;
         S.checked = S.checked || {};
         saveResult();
+        /* 从「在浏览器打开」这类入口进来的人手里没有 token（没走过口令验证），
+           不补一个的话，「再测一次」和分享码都没法用。地址里带着口令就静默补上。 */
+        var k = codeFromUrl();
+        if (k && !S.token) {
+          S.code = k;
+          api('/api/redeem', { method: 'POST', body: { code: k, token: null } }).then(function (rr) {
+            if (rr && rr.ok && rr.token) {
+              S.token = rr.token; S.authed = true; S.unlimited = rr.unlimited === true;
+              try { localStorage.setItem(K_TOKEN, rr.token); } catch (e) { }
+            }
+          });
+        }
         history.replaceState(null, '', '#/result');
         renderResult();
         window.scrollTo(0, 0);
@@ -1387,6 +1432,7 @@
       show('view-gate');
       bindKefu();
     }
+    S.code = code;   /* 记下来 —— 地址栏要一直带着它，重测时还要靠它进门 */
     api('/api/redeem', { method: 'POST', body: { code: code, token: null } }).then(function (r) {
       if (r && r.ok && r.token) {
         S.token = r.token;
