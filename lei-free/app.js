@@ -800,6 +800,16 @@
   }
 
   /* 保存长图 */
+  /* 这个环境点了「下载」到底有没有反应 —— 决定了走哪条路。
+     实测结论（不是猜的）：小红书 / 微信 / 微博 / QQ 这类 App 的内置浏览器，
+     Android 上点击下载 **100% 无反应**（WebView 根本没接下载回调），
+     iOS 的 WKWebView 也一样靠不住。所以这类环境**一个保存按钮都不摆** ——
+     摆一个点了没反应的按钮，比不摆更糟（买家会以为东西坏了）。
+     系统浏览器（Safari / Chrome）点了是真能存的，那种环境才走下载。 */
+  function canDownload() {
+    return !/MicroMessenger|Weibo|QQ\/|Xiaohongshu|xhs|Rednote|RedNote|DingTalk|AlipayClient/i.test(ua);
+  }
+
   function saveImage() {
     if (!S.an) return;
     if (typeof html2canvas !== 'function') {
@@ -812,9 +822,9 @@
       S.img = res.url;
       var name = '疲惫类型自测-' + String(S.an.title).replace(/[\s×]/g, '') + '.png';
       S.imgName = name;
-      if (!isMobile) {
+      if (canDownload()) {
         download(res.url, name);
-        toast('长图已保存到「下载」文件夹');
+        toast('已保存 —— 去相册或「下载」里看看', 3200);
       } else {
         openPreview(res.url, name);
       }
@@ -824,47 +834,28 @@
     });
   }
 
-  /* 长图预览层（手机端）
-     —— 之前只有「长按保存」一条路，而 iOS Safari 对超长 data: 地址的图经常
-        弹不出「存储到照片」，点了以为存了其实没存。现在三条路都给：
-        ①「保存到相册」按钮（走 a[download]）；② 长按图片；③ 发给朋友。
-        图片地址也从 dataURL 换成 blob: —— 长按菜单稳定得多。
-
-     2026-10-25b：上一版「内置浏览器就不给按钮」是过度设计 —— 实测带密码那版
-     （按钮一直摆着）是能存的，藏掉之后反而只剩长按一条路，而长按在
-     小红书 / 微信的 WebView 里对 blob: 图常常不弹「保存图片」菜单。
-     现在按钮**永远摆着**，另外补一条「在新页面打开」：打开后就是一张纯图片，
-     长按保存这条路在任何 WebView 里都走得通。 */
+  /* 长图预览层 —— **只有「长按保存」一条路**。
+     为什么不给按钮：App 内置浏览器里点了没反应（见 canDownload 的说明），
+     而「长按图片 → 保存图片」是这类 WebView 里唯一走得通的一条路
+     （iOS WKWebView 和 Android WebView 都提供这个长按菜单）。
+     这里因此不摆任何「保存方式」按钮，只把图铺满 + 一句话说清怎么存，
+     免得买家在三条路之间挑，挑错了还以为是自己手机的问题。 */
   function openPreview(url, name) {
-    var isApp = /MicroMessenger|Weibo|QQ\/|Xiaohongshu|xhs|Rednote|RedNote|DingTalk|AlipayClient/i.test(ua);
-    var canShare = !isWeChat && typeof navigator.canShare === 'function' && typeof File === 'function';
-    var isIOS = /iPhone|iPad|iPod/i.test(ua);
-
     var showUrl = url, objectUrl = null;
     try {
       objectUrl = URL.createObjectURL(PO.dataURLtoBlob(url));
       showUrl = objectUrl;
-    } catch (e) { /* 拿不到 blob 就退回 dataURL，不影响后面的路 */ }
-
-    var where = isIOS
-      ? 'iPhone：存好的图在「照片」里；用按钮存的可能先落到「文件 → 下载」。'
-      : '安卓：一般直接进相册，也可能在「文件管理 → 下载」。';
-    var hint = '<b>①</b> 先点上面的「保存到相册」<br>'
-      + '<b>②</b> 点了没动静 → 点「在新页面打开」，打开后长按那张图 →「保存图片」<br>'
-      + '<b>③</b> 还是不行 → 点右上角「···」→「用浏览器打开」这一页，再点一次保存';
+    } catch (e) { /* 拿不到 blob 就退回 dataURL，不影响长按 */ }
 
     var d = document.createElement('div');
     d.className = 'pv';
     d.innerHTML =
-      '<div class="pvtop">'
-      + '<div class="t"><b>结果长图已生成</b><span>三条路，总有一条能存下来</span></div>'
-      + '<button id="pvSave">保存到相册</button>'
-      + '<button id="pvOpen">在新页面打开</button>'
-      + (canShare ? '<button id="pvShare">发给朋友</button>' : '')
-      + '<button id="pvClose">关闭</button>'
-      + '</div>'
+      '<button class="pvx" id="pvClose" type="button" aria-label="关闭">×</button>'
+      + '<div class="pvbar"><b>长按图片 → 保存图片</b></div>'
       + '<div class="pvbody"><img src="' + showUrl + '" alt="我的测评结果长图">'
-      + '<div class="hint">' + hint + '<br>' + where + '</div></div>';
+      + '<div class="hint">手指按住上面这张图别松，等菜单弹出来，点「保存图片」。<br>'
+      + '长按没反应：点右上角「···」→「用浏览器打开」，再点一次「保存长图」。</div>'
+      + '</div>';
     document.body.appendChild(d);
 
     function close() {
@@ -872,38 +863,6 @@
       if (objectUrl) { try { URL.revokeObjectURL(objectUrl); } catch (e) { } }
     }
     d.querySelector('#pvClose').onclick = close;
-
-    d.querySelector('#pvSave').onclick = function () {
-      download(showUrl, name);
-      /* 只说「已触发」，不说「已保存」—— 保存到没保存由系统决定，
-         说死了而相册里没有，买家第一反应就是「这东西是坏的」。 */
-      toast('已触发保存 —— 没看到图就点「在新页面打开」，长按存', 3600);
-    };
-    /* 内置浏览器里 a[download] 常被忽略，而「把图片单独打开成一页」几乎是
-       所有 WebView 都支持的 —— 打开后长按保存是这类环境里最稳的一条路。 */
-    var opener = d.querySelector('#pvOpen');
-    if (opener) opener.onclick = function () {
-      var a = document.createElement('a');
-      a.href = showUrl; a.target = '_blank'; a.rel = 'noopener';
-      a.style.display = 'none'; document.body.appendChild(a); a.click();
-      setTimeout(function () { if (a.parentNode) a.parentNode.removeChild(a); }, 100);
-      toast('已打开一张单独的图片 —— 长按它 →「保存图片」', 3600);
-    };
-
-    if (canShare) {
-      d.querySelector('#pvShare').onclick = function () {
-        try {
-          var blob = PO.dataURLtoBlob(url);
-          var file = new File([blob], name, { type: 'image/png' });
-          if (navigator.canShare({ files: [file] })) {
-            navigator.share({ files: [file], title: '我的疲惫类型', text: '我测出来的累是「' + S.an.title + '」' })
-              .catch(function () { });
-          } else {
-            download(showUrl, name);
-          }
-        } catch (e) { download(showUrl, name); }
-      };
-    }
   }
 
   /* 好评有礼 */
