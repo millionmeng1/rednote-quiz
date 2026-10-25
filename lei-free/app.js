@@ -161,7 +161,12 @@
     /* 店主自己的永久测试码：允许反复完整体验（前台唯一豁免） */
     unlimited: false,
     /* 这份结果是从本机调出来的旧结果（不是刚答完的）—— 顶部要挂说明 */
-    restored: false, restoredAt: null
+    restored: false, restoredAt: null,
+    /* 长图已经传上图床的网络地址 + 它对应的那版内容。
+       出结果时就后台传好（见 prewarmPoster），买家点「保存长图」的那一刻
+       直接就是能长按的网络图 —— 不用等十秒上传，也就不会长按到一张存不了的图。
+       imgKey 变了（重测 / 改了勾选）就作废重传。 */
+    remoteImg: null, imgKey: null
   };
   var K_TOKEN = 'lei_token_v1', K_RESULT = 'lei_result_v1', K_PROG = 'lei_prog_v1';
   var K_UNL = 'lei_unl_v1';
@@ -557,6 +562,7 @@
     }
     S.finished = true;
     S.restored = false; S.restoredAt = null;
+    S.remoteImg = null; S.imgKey = null;
     S.an = QZ.analyze(S.answers);
     S.mode = 'own';
     S.share = null;
@@ -687,7 +693,10 @@
         S.checked[i] = !S.checked[i];
         li.classList.toggle('on', !!S.checked[i]);
         updateFixCount();
+        /* 图的内容变了，之前传好的那张作废，下次再传 */
+        S.remoteImg = null; S.imgKey = null;
         saveResult();
+        prewarmPoster();
       };
       updateFixCount();
     }
@@ -697,6 +706,8 @@
     if (sb) sb.onclick = switchCode;
 
     renderActbar();
+    /* 结果一出来就把长图传好 —— 等买家点「保存长图」再传就来不及了 */
+    prewarmPoster();
   }
 
   function renderActbar() {
@@ -753,6 +764,7 @@
         S.answers = new Array(N).fill(0);
         S.idx = 0; S.an = null; S.checked = {}; S.share = null; S.finished = false;
         S.restored = false; S.restoredAt = null;
+        S.remoteImg = null; S.imgKey = null;
         try { localStorage.removeItem(K_RESULT); } catch (e) { }
         clearProgress();
         history.replaceState(null, '', '#/quiz');
@@ -773,6 +785,7 @@
     } catch (e) { }
     S.resultAt = null; S.finished = false;
     S.restored = false; S.restoredAt = null;
+    S.remoteImg = null; S.imgKey = null;
     S.idx = 0; S.an = null; S.share = null; S.checked = {};
     S.answers = new Array(N).fill(0);
     clearProgress();
@@ -829,7 +842,14 @@
 
     var name = 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 11) + '.png';
     var ctrl = new AbortController();
-    var timer = setTimeout(function () { try { ctrl.abort(); } catch (e) { } }, 7000);
+    /* 超时给到 30 秒：一张 1MB 出头的长图，在手机网络（尤其小红书 WebView 里
+       还套了一层代理）实测要 7 秒以上才传完。原来只给 7 秒，结果服务端都回了
+       200、body 还没传完就被掐断（net::ERR_ABORTED），图就一直停在 blob:
+       地址上 —— 长按依然没有菜单。宁可让人多等一会儿，也不能悄悄退回死路。 */
+    var timer = setTimeout(function () { try { ctrl.abort(); } catch (e) { } }, 30000);
+
+    function done(url) { clearTimeout(timer); return url; }
+
     return fetch(base + '/storage/v1/object/posters/' + name, {
       method: 'POST',
       headers: {
@@ -841,10 +861,63 @@
       body: blob,
       signal: ctrl.signal
     }).then(function (r) {
-      clearTimeout(timer);
-      if (!r.ok) return '';
-      return base + '/storage/v1/object/public/posters/' + name;
-    }).catch(function () { clearTimeout(timer); return ''; });
+      /* 必须把响应体读掉：不读的话 Chrome 会把它当成悬挂请求直接 abort，
+         服务端其实已经存好了，这里却拿不到地址。 */
+      var body = r.text().catch(function () { return ''; });
+      if (!r.ok) return body.then(function () { return done(''); });
+      return body.then(function () { return done(base + '/storage/v1/object/public/posters/' + name); });
+    }).catch(function () { return done(''); });
+  }
+
+  /* 长图太大（1162×6576、1MB 出头），手机网络上传要十秒开外。
+     缩到宽 900 之后体积掉一半多，上传快得多，而长按保存根本不在乎像素 ——
+     这张图是拿去发朋友圈的，不是拿去印刷的。 */
+  function shrinkPNG(dataURL, maxW) {
+    return new Promise(function (resolve) {
+      var img = new Image();
+      img.onload = function () {
+        var w = img.naturalWidth, h = img.naturalHeight;
+        if (!w || !h) return resolve('');
+        var k = Math.min(1, (maxW || 900) / w);
+        var c = document.createElement('canvas');
+        c.width = Math.round(w * k);
+        c.height = Math.round(h * k);
+        var g = c.getContext('2d');
+        g.fillStyle = '#fff';
+        g.fillRect(0, 0, c.width, c.height);
+        g.drawImage(img, 0, 0, c.width, c.height);
+        try { resolve(c.toDataURL('image/png')); } catch (e) { resolve(''); }
+      };
+      img.onerror = function () { resolve(''); };
+      img.src = dataURL;
+    });
+  }
+
+  /* 内容指纹：answers + checked 一变，之前传好的那张图就作废 */
+  function imgKeyNow() {
+    try {
+      return (S.answers || []).join(',') + '|' + JSON.stringify(S.checked || {});
+    } catch (e) { return String(Date.now()); }
+  }
+
+  /* 出结果后立刻在后台把长图传好。
+     为什么不等到点「保存长图」再传：那时才开始传，买家得对着一张还不能长按的
+     图干等十秒，多数人会先按一下 —— 按到的还是 blob 图，没有菜单，等于白做。
+     提前传完，点开就是网络图，按下去立刻有菜单。传失败不吭声，走原来的兜底。 */
+  function prewarmPoster() {
+    if (!S.an || typeof html2canvas !== 'function') return;
+    var key = imgKeyNow();
+    if (S.remoteImg && S.imgKey === key) return;
+    S.remoteImg = null; S.imgKey = key;
+    PO.render(S.an, CFG, S.checked).then(function (res) {
+      S.img = res.url;
+      return shrinkPNG(res.url, 900).then(function (small) {
+        return uploadPoster(small || res.url);
+      });
+    }).then(function (remote) {
+      /* 期间又改了内容就别认这笔 —— 留着会给出一张跟当前结果对不上的图 */
+      if (remote && S.imgKey === key) S.remoteImg = remote;
+    }).catch(function () { });
   }
 
   function saveImage() {
@@ -853,12 +926,20 @@
       openInfoModal('暂时无法生成图片', '<p>这个浏览器不支持自动生图。</p><p>你可以直接对当前页面连续截图保存，内容是一样的。</p>');
       return;
     }
+    var name = '疲惫类型自测-' + String(S.an.title).replace(/[\s×]/g, '') + '.png';
+    S.imgName = name;
+
+    /* 已经提前传好了 —— 直接用，一点就开，不用等 */
+    if (S.remoteImg && S.imgKey === imgKeyNow()) {
+      if (canDownload()) { download(S.remoteImg, name); toast('已保存 —— 去相册或「下载」里看看', 3200); }
+      else openPreview(S.remoteImg, name);
+      return;
+    }
+
     showLoading('正在生成结果长图…');
     PO.render(S.an, CFG, S.checked).then(function (res) {
       hideLoading();
       S.img = res.url;
-      var name = '疲惫类型自测-' + String(S.an.title).replace(/[\s×]/g, '') + '.png';
-      S.imgName = name;
       if (canDownload()) {
         download(res.url, name);
         toast('已保存 —— 去相册或「下载」里看看', 3200);
