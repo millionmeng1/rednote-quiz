@@ -652,7 +652,8 @@
        图案本身是不透明方图，所以按圆形裁切（object-fit:cover），
        顺带把右下角的生成水印裁出圆外。 */
     if (T.img) {
-      h += '<div class="rghost"><img class="gm" src="ghost/' + esc(T.img) + '" alt="' + esc(T.name) + '"></div>';
+      h += '<div class="rghost"><div class="gwrap"><img class="gm" src="ghost/'
+        + esc(T.img) + '" alt="' + esc(T.name) + '"></div></div>';
     }
     h += '<div class="rlab">' + (mode === 'shared' ? 'TA 身上住着' : '你身上住着') + '</div>';
     h += '<div class="rname" style="color:' + an.color + '">' + esc(an.title) + '</div>';

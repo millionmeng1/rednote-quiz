@@ -84,10 +84,13 @@ h1{font-size:26px;line-height:1.38;margin:0 0 12px;letter-spacing:-.5px}
    图案是不透明方图（自带渐变底），方形直出会像贴了张照片；
    圆裁之后成了"贴纸头像"，而且右下角的生成水印正好被裁到圆外。 */
 .rghost{display:flex;justify-content:center;margin:2px 0 16px}
-.rghost .gm{width:168px;height:168px;object-fit:cover;border-radius:50%;display:block;
+.rghost .gwrap{width:168px;height:168px;border-radius:50%;overflow:hidden;
   box-shadow:0 10px 22px rgba(60,30,90,.16), 0 0 0 4px #fff, 0 0 0 5.5px rgba(120,90,160,.16)}
+/* 放大 1.16：AI 生成水印在图的右下角，圆裁只切掉直角，水印还在圆内。
+   放大到 1.16 后水印被推出圆外 —— 卖钱的商品图不能带生成标识。 */
+.rghost .gm{width:100%;height:100%;object-fit:cover;display:block;transform:scale(1.16)}
 @media (max-width:360px){
-  .rghost .gm{width:138px;height:138px}
+  .rghost .gwrap{width:138px;height:138px}
 }
 .rhead{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:26px 20px;text-align:center;margin-bottom:14px;box-shadow:var(--sh)}
 .rlab{font-size:11.5px;letter-spacing:.16em;color:var(--ink3);font-weight:700}
