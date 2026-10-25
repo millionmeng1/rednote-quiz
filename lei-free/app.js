@@ -159,7 +159,9 @@
     /* 本次会话已经交过卷 —— 结果页据此不再给「再测一次」（一个密码只测一次） */
     finished: false,
     /* 店主自己的永久测试码：允许反复完整体验（前台唯一豁免） */
-    unlimited: false
+    unlimited: false,
+    /* 这份结果是从本机调出来的旧结果（不是刚答完的）—— 顶部要挂说明 */
+    restored: false, restoredAt: null
   };
   var K_TOKEN = 'lei_token_v1', K_RESULT = 'lei_result_v1', K_PROG = 'lei_prog_v1';
   var K_UNL = 'lei_unl_v1';
@@ -554,6 +556,7 @@
       return;
     }
     S.finished = true;
+    S.restored = false; S.restoredAt = null;
     S.an = QZ.analyze(S.answers);
     S.mode = 'own';
     S.share = null;
@@ -655,9 +658,23 @@
     if (el) el.textContent = '今天完成了 ' + n + ' / 3';
   }
 
+  function fmtWhen(ts) {
+    if (!ts) return '';
+    var d = new Date(ts);
+    if (isNaN(d.getTime())) return '';
+    return (d.getMonth() + 1) + '月' + d.getDate() + '日 '
+      + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+  }
+
   function renderResult() {
     var an = S.an;
     var head = '<div class="brand">' + esc(CFG.shopName || '疲惫类型自测') + '</div>';
+    /* 从本机调出来的旧结果：顶部挂一条说明，别让人把别人的结果当成自己的 */
+    if (S.restored) {
+      head += '<div class="qrchip" style="margin-bottom:12px">这是这台设备上次'
+        + (fmtWhen(S.restoredAt) ? '（' + fmtWhen(S.restoredAt) + '）' : '')
+        + '测的结果 —— 想测自己的，点最下面的「换个人测」</div>';
+    }
     $('view-result').innerHTML = head + resultHTML(an, S.mode);
     show('view-result');
 
@@ -733,6 +750,7 @@
       if (r && r.ok && r.allow) {
         S.answers = new Array(N).fill(0);
         S.idx = 0; S.an = null; S.checked = {}; S.share = null; S.finished = false;
+        S.restored = false; S.restoredAt = null;
         try { localStorage.removeItem(K_RESULT); } catch (e) { }
         clearProgress();
         history.replaceState(null, '', '#/quiz');
@@ -752,6 +770,7 @@
       localStorage.removeItem(K_RESULT);
     } catch (e) { }
     S.resultAt = null; S.finished = false;
+    S.restored = false; S.restoredAt = null;
     S.idx = 0; S.an = null; S.share = null; S.checked = {};
     S.answers = new Array(N).fill(0);
     clearProgress();
@@ -809,15 +828,15 @@
         ①「保存到相册」按钮（走 a[download]）；② 长按图片；③ 发给朋友。
         图片地址也从 dataURL 换成 blob: —— 长按菜单稳定得多。
 
-     2026-10-25：小红书 / 微博 / QQ 这类 App 内置浏览器点了「保存」常常什么都不
-     发生，却照样弹「已保存」——那是骗人的反馈。这类环境里干脆不摆按钮，
-     只留「长按图片」这条确定能走通的路，省得买家以为存好了其实没存。 */
+     2026-10-25b：上一版「内置浏览器就不给按钮」是过度设计 —— 实测带密码那版
+     （按钮一直摆着）是能存的，藏掉之后反而只剩长按一条路，而长按在
+     小红书 / 微信的 WebView 里对 blob: 图常常不弹「保存图片」菜单。
+     现在按钮**永远摆着**，另外补一条「在新页面打开」：打开后就是一张纯图片，
+     长按保存这条路在任何 WebView 里都走得通。 */
   function openPreview(url, name) {
     var isApp = /MicroMessenger|Weibo|QQ\/|Xiaohongshu|xhs|Rednote|RedNote|DingTalk|AlipayClient/i.test(ua);
     var canShare = !isWeChat && typeof navigator.canShare === 'function' && typeof File === 'function';
     var isIOS = /iPhone|iPad|iPod/i.test(ua);
-    /* 内置浏览器（含微信）不给「保存」按钮 —— 摆着点了没反应，比不摆更糟 */
-    var canSave = !isApp;
 
     var showUrl = url, objectUrl = null;
     try {
@@ -825,19 +844,20 @@
       showUrl = objectUrl;
     } catch (e) { /* 拿不到 blob 就退回 dataURL，不影响后面的路 */ }
 
-    var hint = canSave
-      ? '先点上面的「保存到相册」；没反应就长按图片 →「保存图片」'
-      : '长按下面这张图 →「保存图片」；还是存不了，就点右上角「···」→ 用浏览器打开这一页，再点一次保存';
     var where = isIOS
-      ? 'iPhone：长按存的会进「照片」；用按钮存的可能只进「文件 → 下载」。'
+      ? 'iPhone：存好的图在「照片」里；用按钮存的可能先落到「文件 → 下载」。'
       : '安卓：一般直接进相册，也可能在「文件管理 → 下载」。';
+    var hint = '<b>①</b> 先点上面的「保存到相册」<br>'
+      + '<b>②</b> 点了没动静 → 点「在新页面打开」，打开后长按那张图 →「保存图片」<br>'
+      + '<b>③</b> 还是不行 → 点右上角「···」→「用浏览器打开」这一页，再点一次保存';
 
     var d = document.createElement('div');
     d.className = 'pv';
     d.innerHTML =
       '<div class="pvtop">'
-      + '<div class="t"><b>结果长图已生成</b><span>' + (canSave ? '存到相册或直接分享' : '长按图片即可保存') + '</span></div>'
-      + (canSave ? '<button id="pvSave">保存到相册</button>' : '')
+      + '<div class="t"><b>结果长图已生成</b><span>三条路，总有一条能存下来</span></div>'
+      + '<button id="pvSave">保存到相册</button>'
+      + '<button id="pvOpen">在新页面打开</button>'
       + (canShare ? '<button id="pvShare">发给朋友</button>' : '')
       + '<button id="pvClose">关闭</button>'
       + '</div>'
@@ -851,13 +871,21 @@
     }
     d.querySelector('#pvClose').onclick = close;
 
-    var sv = d.querySelector('#pvSave');
-    if (sv) sv.onclick = function () {
+    d.querySelector('#pvSave').onclick = function () {
       download(showUrl, name);
       /* 只说「已触发」，不说「已保存」—— 保存到没保存由系统决定，
          说死了而相册里没有，买家第一反应就是「这东西是坏的」。 */
-      toast(isIOS ? '已触发保存 —— 没反应就长按图片存到「照片」'
-        : '已触发保存 —— 没反应就长按图片存到相册', 3600);
+      toast('已触发保存 —— 没看到图就点「在新页面打开」，长按存', 3600);
+    };
+    /* 内置浏览器里 a[download] 常被忽略，而「把图片单独打开成一页」几乎是
+       所有 WebView 都支持的 —— 打开后长按保存是这类环境里最稳的一条路。 */
+    var opener = d.querySelector('#pvOpen');
+    if (opener) opener.onclick = function () {
+      var a = document.createElement('a');
+      a.href = showUrl; a.target = '_blank'; a.rel = 'noopener';
+      a.style.display = 'none'; document.body.appendChild(a); a.click();
+      setTimeout(function () { if (a.parentNode) a.parentNode.removeChild(a); }, 100);
+      toast('已打开一张单独的图片 —— 长按它 →「保存图片」', 3600);
     };
 
     if (canShare) {
@@ -894,9 +922,11 @@
          那样朋友点开只会看到口令屏，等于分享了个空链接。 */
       var url = location.origin + location.pathname + '?r=' + encodeURIComponent(code);
       S.link = url;
+      /* 微信会拦境外域名（本站挂在 github.io），朋友点开常常就是一句
+         「这个链接打不开了」。与其让他碰壁，不如复制完就把话说清楚，
+         并且把「发长图」这条路摆在同一屏 —— 微信里发图片不受域名限制。 */
       return copyText(url).then(function (ok) {
-        if (ok) toast('链接已复制，发给朋友就能看到你的结果');
-        else openLinkModal(url);
+        openShareModal(url, ok);
       });
     }).catch(function (e) {
       hideLoading();
@@ -918,6 +948,34 @@
     setTimeout(function () { ta.focus(); ta.select(); }, 60);
     d.querySelector('.close').onclick = function () { d.parentNode.removeChild(d); };
     d.querySelector('#mlclose').onclick = function () { d.parentNode.removeChild(d); };
+    d.onclick = function (e) { if (e.target === d) d.parentNode.removeChild(d); };
+  }
+
+  /* 复制完结果链接后的说明屏。
+     必须说清两件事：① 链接复制成功了没（自动复制在内置浏览器里常被拦）；
+     ② 微信里很可能打不开（境外域名被拦），最稳的是发长图。
+     少了 ②，朋友那边一句「链接打不开」就会落到店主头上。 */
+  function openShareModal(url, autoCopied) {
+    var d = document.createElement('div');
+    d.className = 'mask';
+    d.innerHTML = '<div class="modal" style="max-width:380px">'
+      + '<button class="close">×</button>'
+      + '<h3>' + (autoCopied ? '链接已复制' : '复制这个链接') + '</h3>'
+      + '<p>' + (autoCopied
+        ? '发给朋友，他点开就能看到你这份结果。'
+        : '自动复制被浏览器拦住了 —— 长按下面的链接选中后复制就行。') + '</p>'
+      + '<div class="hl" style="text-align:left">微信里点开有时会提示「这个链接打不开」——'
+      + '微信会拦境外域名。<b>发到微信最稳的办法是发长图</b>：先存成图，再在微信里发图片。</div>'
+      + '<div class="kefu"><div class="k" style="width:100%"><div class="kl">结果链接</div>'
+      + '<textarea readonly style="width:100%;border:none;background:transparent;font-size:13px;color:#1c2026;resize:none;height:64px;outline:none">' + esc(url) + '</textarea></div></div>'
+      + '<button class="btn" id="mSaveImg">去存长图（推荐发微信）</button>'
+      + '<button class="btn line" id="mlclose" style="margin-top:8px">知道了</button></div>';
+    document.body.appendChild(d);
+    var ta = d.querySelector('textarea');
+    setTimeout(function () { ta.focus(); ta.select(); }, 60);
+    d.querySelector('.close').onclick = function () { d.parentNode.removeChild(d); };
+    d.querySelector('#mlclose').onclick = function () { d.parentNode.removeChild(d); };
+    d.querySelector('#mSaveImg').onclick = function () { d.parentNode.removeChild(d); saveImage(); };
     d.onclick = function (e) { if (e.target === d) d.parentNode.removeChild(d); };
   }
 
@@ -1111,6 +1169,11 @@
           S.share = saved.s || null;
           S.checked = saved.c || {};
           S.an = QZ.analyze(S.answers);
+          /* 这台设备上一次测的结果被调了出来 —— 必须让他一眼看出「这是旧的」，
+             否则同一个人换台手机、或者下一个人拿这台手机点开链接，都会以为
+             「我刚买的怎么直接给我看别人的结果」。 */
+          S.restored = true;
+          S.restoredAt = saved.t || null;
           renderResult();
         } else if (S.unlimited) {
           /* 永久码 + 本地缓存没了：不装作「结果丢了」，直接让他重来一轮 */
