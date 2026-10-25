@@ -288,7 +288,7 @@
     if (v) {
       v.innerHTML =
         '<div class="brand">' + esc(CFG.shopName || '万圣节鬼形自测') + '</div>'
-        + '<h1>' + esc(CFG.quizTitle || '你现在的累，是哪一种累？') + '</h1>'
+        + '<h1>' + esc(CFG.quizTitle || '万圣节前夜，你身上住着哪只鬼？') + '</h1>'
         + '<p class="lead">正在打开小红书商品页…</p>'
         + '<a class="btn gold" style="text-decoration:none;display:block;text-align:center;max-width:320px;margin:18px auto 0"'
         + ' href="' + esc(CFG.buyUrl) + '" rel="noopener">'
@@ -374,7 +374,7 @@
     $('actbar').classList.add('hide');
     $('view-gate').innerHTML =
       '<div class="brand">' + esc(CFG.shopName || '万圣节鬼形自测') + '</div>'
-      + '<h1>' + esc(CFG.quizTitle || '你现在的累，是哪一种累？') + '</h1>'
+      + '<h1>' + esc(CFG.quizTitle || '万圣节前夜，你身上住着哪只鬼？') + '</h1>'
       + '<p class="lead">你不是最近才变成这样的。<br>有只鬼早就住进来了 —— 它当初，是来帮你的。</p>'
       + (fromQR() ? qrChipHTML() : '')
       + '<div class="facts"><span class="fact">12 道题 · 约 2 分钟</span><span class="fact">7 只鬼 · 21 种组合</span><span class="fact">每种附送它走的第一步</span></div>'
@@ -497,7 +497,7 @@
     }
     $('view-landing').innerHTML =
       '<div class="brand">' + esc(CFG.shopName || '万圣节鬼形自测') + '</div>'
-      + '<h1>' + esc(CFG.quizTitle || '你现在的累，是哪一种累？') + '</h1>'
+      + '<h1>' + esc(CFG.quizTitle || '万圣节前夜，你身上住着哪只鬼？') + '</h1>'
       + '<p class="lead">你不是最近才变成这样的。<br>有只鬼早就住进来了 —— 它当初，是来帮你的。</p>'
       + '<div class="facts"><span class="fact">12 道题 · 约 2 分钟</span><span class="fact">7 只鬼 · 21 种组合</span><span class="fact">每种附送它走的第一步</span></div>'
       + '<div class="box">'
@@ -1451,7 +1451,7 @@
     if (v) {
       v.innerHTML =
         '<div class="brand">' + esc(CFG.shopName || '万圣节鬼形自测') + '</div>'
-        + '<h1>' + esc(CFG.quizTitle || '你现在的累，是哪一种累？') + '</h1>'
+        + '<h1>' + esc(CFG.quizTitle || '万圣节前夜，你身上住着哪只鬼？') + '</h1>'
         + '<p class="lead">正在进入测试…</p>'
         + (failMsg ? '<div class="msg err" style="margin:16px 0 0">' + esc(failMsg) + '</div>' : '')
         + '<div class="box" style="margin-top:16px"><p>如果这个页面一直停在这里，'
