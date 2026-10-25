@@ -925,8 +925,20 @@
   function isIOS() { return /iPhone|iPad|iPod/i.test(ua); }
   function isAndroid() { return /Android/i.test(ua); }
   /* 小红书内置浏览器：长按图片**实测没有菜单**（百万 2026-10-25 实测），
-     所以这个环境里长按保存这条路是死的 —— 必须换一条，见 openXhsSaveGuide。 */
+     所以这个环境里长按保存这条路是死的 —— 必须换一条，见 openBrowserSave。 */
   function isXHS() { return /Xiaohongshu|xhs|Rednote|RedNote/i.test(ua); }
+  /* 注意：文件开头已经有一个同名的布尔变量 isWeChat（别再定义成函数，
+     同名 var 会把它盖掉，调用时就是 "is not a function"）—— 直接用那个变量。 */
+  /* 是不是 App 内置的 WebView。
+     光认 UA 里的 App 名不稳 —— 小红书有些版本的 UA 是伪装成系统 Chrome 的，
+     认不出来就会把人送进一个按了没反应的长按层。所以这里加一条更硬的证据：
+     Android 的 WebView 一定会在 UA 里带 "; wv)"，而系统 Chrome / 自带浏览器**没有**。
+     两个信号取并集，伪装也能认出来。 */
+  function isAppWebview() {
+    if (isIOS()) return /MicroMessenger|Weibo|QQ\/|Xiaohongshu|xhs|Rednote|AlipayClient|DingTalk/i.test(ua);
+    return /;\s*wv\)/i.test(ua)
+      || /Xiaohongshu|xhs|Rednote|MicroMessenger|Weibo|QQ\/|AlipayClient|DingTalk/i.test(ua);
+  }
 
   /* 这台设备上一次测的结果直接还给他 —— 并且明说「这是上次的」。
      以前这里一律清空重来：关掉页面再点订单链接就得重新做 18 道题，
@@ -1011,38 +1023,86 @@
   /* 小红书内置浏览器里长按图片没有菜单 —— 摆一个长按层就是骗人。
      所以这个环境里「保存长图」只做一件事：把**带着结果**的网址交给他，
      让他粘贴到手机浏览器打开，浏览器里长按是能存的（那张图本来就在 https 图床上）。 */
-  function openXhsSaveGuide() {
-    showLoading('正在生成网址…');
+  /* 试着把这份结果**直接甩到手机浏览器里打开** —— 不打扰用户做任何选择。
+     只敢用 intent:// 这一种，而且必须带 fallback：
+       - intent 是 Chrome 内核**认得**的 scheme，认得就一定会按规则处理（能唤起就唤起，
+         唤不起就走 fallback 地址），不会甩一个「无法打开网页」的错误页给买家；
+       - googlechrome:// 这类裸 scheme 试过，内核不认就直接跳错误页，把页面整个搞没了，
+         比不跳还糟，所以不用。
+     两发：先指定 Chrome（装了就直接开），再不指定包名（让系统弹「用哪个浏览器打开」）。
+     每试一次都盯一眼页面有没有被切走（pagehide / visibilitychange / blur），
+     切走了就说明成功跳出去了，后面不必再试；三次都没出去才认输、给全屏引导。
+     fallback 地址统一带 &xhsguide=1 —— 万一 App 不认 intent、把 fallback 在自家
+     WebView 里打开了，那一屏也会自动把引导弹出来，不会变成"跳了一下又回到原地"。 */
+  function tryOpenExternal(url, onFail) {
+    var left = false;
+    function mark() { left = true; }
+    window.addEventListener('pagehide', mark);
+    window.addEventListener('blur', mark);
+    document.addEventListener('visibilitychange', function () { if (document.hidden) mark(); });
+
+    var fb = url + '&xhsguide=1';
+    var noScheme = url.replace(/^https?:\/\//i, '');
+    var steps = [];
+    if (isAndroid()) {
+      steps.push('intent://' + noScheme + '#Intent;scheme=https;package=com.android.chrome;'
+        + 'S.browser_fallback_url=' + encodeURIComponent(fb) + ';end');
+      steps.push('intent://' + noScheme + '#Intent;scheme=https;'
+        + 'S.browser_fallback_url=' + encodeURIComponent(fb) + ';end');
+    } else {
+      steps.push(null);   /* iOS 没有可靠的唤起方式，只能开个新标签试试 */
+    }
+    var i = 0;
+    (function next() {
+      if (left) return;
+      if (i >= steps.length) { setTimeout(function () { if (!left) onFail(); }, 300); return; }
+      var s = steps[i++];
+      try {
+        if (s === null) window.open(fb, '_blank');
+        else location.href = s;
+      } catch (e) { }
+      setTimeout(next, 700);
+    })();
+  }
+
+  /* 跳不出去时的那一屏 —— 大字、指名右上角那个按钮，不再是一行没人看的小字。 */
+  function showBrowserGuide(url) {
+    var d = document.createElement('div');
+    d.className = 'mask guide';
+    d.innerHTML = '<div class="modal">'
+      + '<button class="close">×</button>'
+      + '<h2 class="gtitle">点右上角「···」<br>选「在浏览器打开」</h2>'
+      + '<p>这个 App 里存不了图片（长按没有反应）。在手机浏览器里打开，就能存进相册 —— '
+      + '打开的还是<b>你刚才这份结果</b>，不用重新做一遍。</p>'
+      + '<ol class="steps">'
+      + '<li>点屏幕右上角的 <b>···</b></li>'
+      + '<li>选 <b>在浏览器中打开</b></li>'
+      + '<li>打开后点 <b>保存长图</b> → 按住图片 → 选「下载图片 / 存储到照片」</li>'
+      + '</ol>'
+      + '<button class="btn" id="gRetry" type="button">再试一次自动打开</button>'
+      + (url ? '<button class="btn line" id="gCopy" type="button" style="margin-top:10px" data-url="' + esc(url) + '">复制网址（备用）</button>' : '')
+      + '</div>'
+      /* 箭头钉在屏幕右上角 —— 就是那个「···」的位置，比任何一行说明都管用 */
+      + '<div class="garrow">↗</div>';
+    document.body.appendChild(d);
+    function close() { if (d.parentNode) d.parentNode.removeChild(d); }
+    d.querySelector('.close').onclick = close;
+    d.onclick = function (e) { if (e.target === d) close(); };
+    var rt = d.querySelector('#gRetry');
+    if (rt) rt.onclick = function () { close(); tryOpenExternal(url, function () { showBrowserGuide(url); }); };
+    var cp = d.querySelector('#gCopy');
+    if (cp) cp.onclick = function () {
+      copyText(cp.getAttribute('data-url') || url, '网址已复制 —— 粘贴到手机浏览器打开', '复制失败 —— 请手动记下网址');
+    };
+  }
+
+  /* 内置浏览器里的「保存长图」：先拿到带结果的网址，再试着直接跳浏览器 */
+  function openBrowserSave() {
+    showLoading('正在打开浏览器…');
     ensureShare().then(function (share) {
-      hideLoading();
-      var url = share ? ownResultUrl() : '';
-      var body = url
-        ? '<div class="box" style="margin:14px 0"><input id="xhsUrl" class="urlinput" readonly value="' + esc(url) + '"></div>'
-          + '<button class="btn" id="xhsCopy" type="button">复制网址</button>'
-          + '<ol class="steps">'
-          + '<li>点上面的「复制网址」</li>'
-          + '<li>打开手机自带的浏览器（iPhone 用 Safari，安卓用 Chrome / 浏览器）</li>'
-          + '<li>粘贴打开 → 就是你这份结果 → 点「保存长图」→ 按住图片选「下载图片 / 存储到照片」</li>'
-          + '</ol>'
-        : '<p>网址没生成成功，请检查网络后重新点一次「保存长图」。</p>'
-          + '<p>也可以回到订单里复制链接，粘贴到手机浏览器打开再保存。</p>';
-      var d = document.createElement('div');
-      d.className = 'mask';
-      d.innerHTML = '<div class="modal" style="max-width:360px"><button class="close">×</button>'
-        + '<h3>小红书里存不了图</h3>'
-        + '<p>小红书内置浏览器不支持保存图片（长按没有反应）。把网址复制到手机浏览器里打开就能存进相册，'
-        + '打开的还是你刚才这份结果，<b>不用重新做一遍</b>。</p>'
-        + body
-        + '<button class="btn line" id="xhsClose" type="button" style="margin-top:12px">知道了</button></div>';
-      document.body.appendChild(d);
-      function close() { if (d.parentNode) d.parentNode.removeChild(d); }
-      d.querySelector('.close').onclick = close;
-      d.querySelector('#xhsClose').onclick = close;
-      d.onclick = function (e) { if (e.target === d) close(); };
-      var cp = d.querySelector('#xhsCopy');
-      if (cp) cp.onclick = function () {
-        copyText(url, '网址已复制 —— 粘贴到手机浏览器打开', '复制失败 —— 请长按上面的网址手动复制');
-      };
+      if (!share) { hideLoading(); showBrowserGuide(''); return; }
+      var url = ownResultUrl();
+      tryOpenExternal(url, function () { hideLoading(); showBrowserGuide(url); });
     });
   }
 
@@ -1079,8 +1139,9 @@
     var name = '疲惫类型自测-' + String(S.an.title).replace(/[\s×]/g, '') + '.png';
     S.imgName = name;
 
-    /* 小红书：长按没反应是实测结论，这里不摆长按层，直接给「去浏览器存」的路径 */
-    if (isXHS()) { openXhsSaveGuide(); return; }
+    /* 小红书 / App 内置浏览器（微信除外，微信长按是通的）：长按实测按了没反应，
+       这里就不再摆长按层 —— 直接试着把这份结果甩到手机浏览器里打开。 */
+    if (isXHS() || (isAndroid() && isAppWebview() && !isWeChat)) { openBrowserSave(); return; }
 
     /* 安卓：只有「长按图片 → 保存图片」这一条路（理由见 shareImage 的注释），
        所以直接把图铺开让他按，不在分享面板上浪费一次点击。 */
@@ -1291,6 +1352,9 @@
         history.replaceState(null, '', '#/result');
         renderResult();
         window.scrollTo(0, 0);
+        /* xhsguide=1 说明这是「自动跳浏览器」失败后 fallback 回落到这个 App 里打开的 ——
+           人还在 App 里，长按依然存不了，所以直接把引导弹出来，别让他对着结果页发呆。 */
+        if (qsGet('xhsguide') === '1') setTimeout(function () { showBrowserGuide(ownResultUrl()); }, 700);
         return;
       }
       $('view-result').innerHTML =
