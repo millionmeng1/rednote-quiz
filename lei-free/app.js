@@ -137,11 +137,26 @@
       return BE.rpc('session', { p_token: b.token });
     },
     '/api/share': function (b) {
-      return BE.rpc('save_result', {
+      var args = {
         p_token: b.token,
         p_answers: b.answers,
         p_main: (S.an && S.an.mainKey) || null,
-        p_index: (S.an && S.an.index) != null ? S.an.index : null
+        p_index: (S.an && S.an.index) != null ? S.an.index : null,
+        /* 设备指纹：服务端据此记住「这台设备最近一次结果」，
+           换个浏览器 / 换个 App 打开链接时能把那份结果还回来。
+           需要服务端跑过那份迁移（给 save_result 加 p_device）。 */
+        p_device: BE.device()
+      };
+      return BE.rpc('save_result', args).then(function (r) {
+        /* 那份迁移还没跑时，PostgREST 会因为「找不到这个函数」把整次调用拒掉 ——
+           那样连分享码都拿不到，比不记设备严重得多。
+           所以这里去掉 p_device 再试一次：功能一模一样，只是暂时记不住设备；
+           等 SQL 一跑，第一次调用就会成功，不用再改前端。 */
+        if (r && r.ok === false && r.error === 'notready') {
+          delete args.p_device;
+          return BE.rpc('save_result', args);
+        }
+        return r;
       });
     },
     '/api/retest': function (b) {
@@ -1339,7 +1354,7 @@
   }
 
   /* ---------------- 分享页（只读） ---------------- */
-  function showShared(code, own) {
+  function showShared(code, own, restored) {
     S.mode = own ? 'own' : 'shared';
     $('shell').classList.remove('hasbar');
     $('actbar').classList.add('hide');
@@ -1374,7 +1389,9 @@
       if (own) {
         S.share = code;
         S.finished = true;
-        S.restored = false; S.restoredAt = null;
+        /* restored：这份是服务端按设备指纹找回来给他的（不是他刚答完的）——
+           必须标出来，否则他会以为"我刚买的怎么直接给我看旧结果"。 */
+        S.restored = !!restored; S.restoredAt = null;
         S.checked = S.checked || {};
         saveResult();
         /* 从「在浏览器打开」这类入口进来的人手里没有 token（没走过口令验证），
@@ -1447,6 +1464,10 @@
            买家只会以为自己买的东西坏了。 */
         var saved = readResult();
         if (saved) { showSavedResult(saved); return; }
+        /* 这台设备上次测过，但本机缓存没了 —— 换浏览器 / 换 App 打开订单链接
+           就是这种情况。服务端按设备指纹记着那份结果，直接还给他，
+           别让他再答一遍 18 道题。（服务端没开这条功能时 lastShare 为空，照旧进首页） */
+        if (!S.unlimited && r.lastShare) { showShared(r.lastShare, true, true); return; }
         showLanding();
         return;
       }

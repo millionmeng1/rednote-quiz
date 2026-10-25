@@ -75,12 +75,34 @@
     });
   }
 
-  /* 设备标识：只用来做「输错太多次先挡一会儿」的软限流，不含任何个人信息 */
+  /* 设备标识：用来做「输错太多次先挡一会儿」的软限流，
+     从 2026-10-25 起还兼作「换个地方打开也能找回上次那份结果」的钥匙。
+     所以**不能**再用"存进 localStorage 的随机数"—— 那个一换浏览器 / 换 App
+     就不见了，正好是我们要跨过去的那一道墙。
+     改成设备指纹：只取 UA 里跨 App 一致的那一段（设备型号 / 系统版本），
+     再配上屏幕、语言、时区。App 自己的标识（MicroMessenger / Xiaohongshu …）
+     一律不参与 —— 同一个人在小红书里和 Chrome 里必须算出同一个值。
+     不含任何能定位到个人的信息，也算不出手机号 / 账号。 */
   function device() {
-    var k = 'lei_dev_v1', v = '';
+    var k = 'lei_dev_v2', v = '';
     try { v = localStorage.getItem(k) || ''; } catch (e) { v = ''; }
     if (!v) {
-      v = 'd' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+      var ua = navigator.userAgent || '';
+      /* UA 括号里第三段的开头就是设备型号：
+         (Linux; Android 14; SM-S918B Build/…) → SM-S918B
+         (iPhone; CPU iPhone OS 17_0 like Mac OS X) → iPhone … */
+      var dev = '';
+      var m = /\(([^;]+);\s*([^;]+);\s*([^;)]+)/.exec(ua);
+      if (m) dev = String(m[3]).replace(/Build\/.*/, '').trim();
+      var s = [dev,
+        (window.screen && screen.width) || 0,
+        (window.screen && screen.height) || 0,
+        navigator.language || '',
+        new Date().getTimezoneOffset(),
+        navigator.platform || ''].join('|');
+      var h = 0;
+      for (var i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) >>> 0; }
+      v = 'd' + h.toString(36);
       try { localStorage.setItem(k, v); } catch (e) { }
     }
     return v;
