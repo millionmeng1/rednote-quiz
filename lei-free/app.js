@@ -1069,19 +1069,16 @@
   function showBrowserGuide(url) {
     var d = document.createElement('div');
     d.className = 'mask guide';
-    d.innerHTML = '<div class="modal">'
-      + '<button class="close">×</button>'
-      + '<h2 class="gtitle">点右上角「···」<br>选「在浏览器打开」</h2>'
-      + '<ol class="steps">'
-      + '<li>点右上角 <b>···</b></li>'
-      + '<li>选 <b>在浏览器打开</b></li>'
-      + '<li>点 <b>保存长图</b> → 按住图片 → 选「下载图片」</li>'
-      + '</ol>'
-      + '<button class="btn" id="gRetry" type="button">再试一次自动打开</button>'
-      + (url ? '<button class="btn line" id="gCopy" type="button" style="margin-top:10px" data-url="' + esc(url) + '">复制网址（备用）</button>' : '')
-      + '</div>'
+    d.innerHTML = ''
       /* 箭头钉在屏幕右上角 —— 就是那个「···」的位置，比任何一行说明都管用 */
-      + '<div class="garrow">↗</div>';
+      + '<div class="garrow">↗</div>'
+      + '<div class="g2box">'
+      + '<div class="g2t">点右上角 <b>···</b></div>'
+      + '<div class="g2s">选「在浏览器打开」</div>'
+      + '<div class="g2hint">打开后点「保存长图」→ 按住图片 → 选「下载图片」</div>'
+      + '<button class="g2btn" id="gRetry" type="button">再试一次自动打开</button>'
+      + (url ? '<button class="g2link" id="gCopy" type="button" data-url="' + esc(url) + '">复制网址</button>' : '')
+      + '</div>'
     document.body.appendChild(d);
     function close() { if (d.parentNode) d.parentNode.removeChild(d); }
     d.querySelector('.close').onclick = close;
