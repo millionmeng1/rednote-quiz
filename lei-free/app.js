@@ -547,7 +547,7 @@
   /* ---------------- 结果 ---------------- */
   function finish() {
     /* 交卷前先自查：有任何一题没选就别交。以前带着残缺答案交上去，
-       服务端会拒收，页面却照常显示结果，买家一点「复制链接」才炸出来。 */
+       服务端会拒收，页面却照常显示结果，买家要分享时才炸出来。 */
     var miss = -1;
     for (var i = 0; i < N; i++) { if (!S.answers[i]) { miss = i; break; } }
     if (miss >= 0) {
@@ -566,7 +566,7 @@
     renderResult();
     window.scrollTo(0, 0);
     /* 向服务端登记「这张码已经出过结果」——同时它也是一次分享码预热，
-       等买家点「复制链接」时就不用再等网络。 */
+       之后要用分享码时不用再等网络。 */
     api('/api/share', { method: 'POST', body: { token: S.token, answers: S.answers } }).then(function (r) {
       if (r && r.ok && r.share) {
         S.share = r.share;
@@ -730,14 +730,16 @@
       };
       return;
     }
+    /* 2026-10-25d：应主要求关掉「复制链接」。
+       理由站得住：站点挂在境外域名上，微信里点开常常一句「链接打不开」，
+       而朋友那边打不开，账会算到店主头上。分享这一环改成只走长图 ——
+       图不受域名限制，发到哪都能看。 */
     bar.innerHTML = '<div class="inner">'
       + '<button class="btn" id="saveBtn">保存长图</button>'
-      + '<button class="btn line" id="linkBtn">复制链接</button>'
       + '<button class="btn gold" id="praiseBtn">好评有礼</button>'
       + '</div>';
     bar.classList.remove('hide');
     $('saveBtn').onclick = saveImage;
-    $('linkBtn').onclick = copyLink;
     $('praiseBtn').onclick = openPraise;
   }
 
@@ -902,81 +904,6 @@
         } catch (e) { download(showUrl, name); }
       };
     }
-  }
-
-  /* 复制结果链接 */
-  function copyLink() {
-    if (!S.an) return;
-    var need = S.share ? Promise.resolve(S.share)
-      : api('/api/share', { method: 'POST', body: { token: S.token, answers: S.answers } }).then(function (r) {
-        if (r && r.ok && r.share) { S.share = r.share; saveResult(); return r.share; }
-        /* 服务端那句「答案格式有误」买家看不懂也照做不了，换成能照做的动作 */
-        throw new Error(r && r.error === 'answers'
-          ? '结果还没保存好 —— 请下拉刷新页面，再点一次复制链接。'
-          : ((r && r.message) || '分享链接生成失败，请稍后再试。'));
-      });
-    showLoading('正在生成分享链接…');
-    need.then(function (code) {
-      hideLoading();
-      /* 用查询串而不是 hash —— 转发时 # 后面的内容常被内置浏览器吃掉，
-         那样朋友点开只会看到口令屏，等于分享了个空链接。 */
-      var url = location.origin + location.pathname + '?r=' + encodeURIComponent(code);
-      S.link = url;
-      /* 微信会拦境外域名（本站挂在 github.io），朋友点开常常就是一句
-         「这个链接打不开了」。与其让他碰壁，不如复制完就把话说清楚，
-         并且把「发长图」这条路摆在同一屏 —— 微信里发图片不受域名限制。 */
-      return copyText(url).then(function (ok) {
-        openShareModal(url, ok);
-      });
-    }).catch(function (e) {
-      hideLoading();
-      toast((e && e.message) || '分享失败，请稍后再试');
-    });
-  }
-
-  function openLinkModal(url) {
-    var d = document.createElement('div');
-    d.className = 'mask';
-    d.innerHTML = '<div class="modal" style="max-width:380px">'
-      + '<button class="close">×</button>'
-      + '<h3>复制这个链接</h3><p>自动复制被浏览器拦住了，长按下面的链接选中后复制即可。</p>'
-      + '<div class="kefu"><div class="k" style="width:100%"><div class="kl">结果链接</div>'
-      + '<textarea readonly style="width:100%;border:none;background:transparent;font-size:13px;color:#1c2026;resize:none;height:64px;outline:none">' + esc(url) + '</textarea></div></div>'
-      + '<button class="btn" id="mlclose">知道了</button></div>';
-    document.body.appendChild(d);
-    var ta = d.querySelector('textarea');
-    setTimeout(function () { ta.focus(); ta.select(); }, 60);
-    d.querySelector('.close').onclick = function () { d.parentNode.removeChild(d); };
-    d.querySelector('#mlclose').onclick = function () { d.parentNode.removeChild(d); };
-    d.onclick = function (e) { if (e.target === d) d.parentNode.removeChild(d); };
-  }
-
-  /* 复制完结果链接后的说明屏。
-     必须说清两件事：① 链接复制成功了没（自动复制在内置浏览器里常被拦）；
-     ② 微信里很可能打不开（境外域名被拦），最稳的是发长图。
-     少了 ②，朋友那边一句「链接打不开」就会落到店主头上。 */
-  function openShareModal(url, autoCopied) {
-    var d = document.createElement('div');
-    d.className = 'mask';
-    d.innerHTML = '<div class="modal" style="max-width:380px">'
-      + '<button class="close">×</button>'
-      + '<h3>' + (autoCopied ? '链接已复制' : '复制这个链接') + '</h3>'
-      + '<p>' + (autoCopied
-        ? '发给朋友，他点开就能看到你这份结果。'
-        : '自动复制被浏览器拦住了 —— 长按下面的链接选中后复制就行。') + '</p>'
-      + '<div class="hl" style="text-align:left">微信里点开有时会提示「这个链接打不开」——'
-      + '微信会拦境外域名。<b>发到微信最稳的办法是发长图</b>：先存成图，再在微信里发图片。</div>'
-      + '<div class="kefu"><div class="k" style="width:100%"><div class="kl">结果链接</div>'
-      + '<textarea readonly style="width:100%;border:none;background:transparent;font-size:13px;color:#1c2026;resize:none;height:64px;outline:none">' + esc(url) + '</textarea></div></div>'
-      + '<button class="btn" id="mSaveImg">去存长图（推荐发微信）</button>'
-      + '<button class="btn line" id="mlclose" style="margin-top:8px">知道了</button></div>';
-    document.body.appendChild(d);
-    var ta = d.querySelector('textarea');
-    setTimeout(function () { ta.focus(); ta.select(); }, 60);
-    d.querySelector('.close').onclick = function () { d.parentNode.removeChild(d); };
-    d.querySelector('#mlclose').onclick = function () { d.parentNode.removeChild(d); };
-    d.querySelector('#mSaveImg').onclick = function () { d.parentNode.removeChild(d); saveImage(); };
-    d.onclick = function (e) { if (e.target === d) d.parentNode.removeChild(d); };
   }
 
   /* 好评有礼 */
