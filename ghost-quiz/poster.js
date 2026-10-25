@@ -35,18 +35,21 @@
     var html = '';
 
     html += '<div class="phead">'
-      + '<div class="pbrand">' + esc(cfg.shopName || '疲惫类型自测') + '</div>'
-      + '<div class="plab">我的累叫</div>'
+      + '<div class="pbrand">' + esc(cfg.shopName || '万圣节鬼形自测') + '</div>'
+      /* 这张鬼图是长图能不能被转发出去的关键：纯文字没人愿意发朋友圈。
+         图案自带渐变底，所以圆裁 —— 和结果页保持同一个视觉语言。 */
+      + (T.img ? '<div class="pghost"><img src="ghost/' + esc(T.img) + '" alt=""></div>' : '')
+      + '<div class="plab">我身上住着</div>'
       + '<div class="pname">' + esc(an.title) + '</div>'
       + '<div class="psub">' + esc(T.name) + '｜' + esc(T.sub) + '<br>' + esc(T.en) + '</div>'
-      + '<div class="pflag">整体疲劳指数 ' + an.index + ' / 100</div>'
+      + '<div class="pflag">阳气剩余 ' + an.index + ' / 100</div>'
       + '</div>';
 
     /* 雷达 + 图例 + 指数 */
     html += '<div class="pcard first">'
       + '<div class="pradarwrap"><canvas id="p-radar" class="pradar"></canvas></div>'
       + legendHTML(an.scores)
-      + '<div class="pidx"><div class="pidxt"><span>整体疲劳指数</span><b>' + an.index + ' / 100</b></div>'
+      + '<div class="pidx"><div class="pidxt"><span>阳气剩余</span><b>' + an.index + ' / 100</b></div>'
       + '<div class="pidxb"><i style="width:' + an.index + '%"></i></div>'
       + '<div class="pidxn">' + esc(an.nowline) + '</div></div>'
       + '</div>';
@@ -92,12 +95,12 @@
     var direct = String(window.POSTER_QR || 'test').toLowerCase() === 'buy' && !!cfg.buyUrl;
     html += '<div class="pfoot">'
       + '<div class="f1">' + esc(cfg.quizTitle || '你现在的累，是哪一种累？') + '</div>'
-      + '<div class="f2">出自「' + esc(cfg.shopName || '') + '」<br>18 题 · 6 个维度 · 7 种结果</div>'
+      + '<div class="f2">出自「' + esc(cfg.shopName || '') + '」<br>12 题 · 7 只鬼 · 21 种组合</div>'
       + '<div class="pqr">'
       + '<canvas id="p-qr" class="pqrc"></canvas>'
       + (direct
         ? '<div class="pqrt">扫码直接拍<br>付款后自动发货</div>'
-        : '<div class="pqrt">扫码直接测<br>18 题 · 约 3 分钟</div>')
+        : '<div class="pqrt">扫码直接测<br>12 题 · 约 2 分钟</div>')
       + '</div>'
       + (direct
         ? '<div class="f3">想测自己的？扫右边的码，直达商品页，拍下自动发货</div>'
@@ -210,7 +213,7 @@
     scale = Math.max(0.8, scale);
 
     var opts = {
-      backgroundColor: '#f5f6f8',
+      backgroundColor: '#f6f4f8',
       scale: scale,
       useCORS: true,
       logging: false,
@@ -223,7 +226,20 @@
     };
     var fonts = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
 
-    return fonts.then(function () {
+    /* 鬼的图案是同源相对路径，html2canvas 会自己去加载。
+       但买家第一次进来时这张图还没进缓存，直接截会得到一块空白 ——
+       所以先显式预加载一次。加载失败也照样往下走，不能因为一张图卡死整张长图。 */
+    var preload = function () {
+      if (!an.T || !an.T.img) return Promise.resolve();
+      return new Promise(function (res) {
+        var im = new Image();
+        im.onload = function () { res(); };
+        im.onerror = function () { res(); };
+        im.src = 'ghost/' + an.T.img;
+      });
+    };
+
+    return fonts.then(preload).then(function () {
       return new Promise(function (r) { setTimeout(r, 60); });
     }).then(run).then(function (canvas) {
       var url;

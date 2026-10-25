@@ -3,8 +3,11 @@
 #poster .pp{padding:0 44px}
 
 /* 顶部 */
-#poster .phead{background:#e8443a;color:#fff;padding:52px 44px 46px;text-align:center}
+#poster .phead{background:linear-gradient(160deg,#ff8a2b,#ef5f1a 62%,#c9410f);color:#fff;padding:52px 44px 46px;text-align:center}
 #poster .pbrand{font-size:20px;letter-spacing:.22em;opacity:.82;margin-bottom:26px}
+#poster .pghost{width:220px;height:220px;margin:0 auto 26px;border-radius:50%;overflow:hidden;
+  box-shadow:0 0 0 7px rgba(255,255,255,.9), 0 14px 30px rgba(70,20,0,.3)}
+#poster .pghost img{width:100%;height:100%;object-fit:cover;display:block}
 #poster .plab{font-size:23px;letter-spacing:.2em;opacity:.85;margin-bottom:12px}
 #poster .pname{font-size:58px;font-weight:700;letter-spacing:-1px;line-height:1.22}
 #poster .psub{font-size:22px;opacity:.9;margin-top:16px;line-height:1.6}
@@ -13,7 +16,7 @@
 /* 卡片 */
 #poster .pcard{background:#fff;margin:22px 24px 0;border-radius:20px;padding:34px 32px}
 #poster .pcard.first{margin-top:-26px}
-#poster .pst{font-size:19px;font-weight:700;letter-spacing:.1em;color:#e8443a;margin-bottom:18px}
+#poster .pst{font-size:19px;font-weight:700;letter-spacing:.1em;color:#e0620f;margin-bottom:18px}
 #poster .ptxt{color:#454c56;line-height:1.82}
 #poster .pcard p{margin:0 0 16px;color:#454c56;line-height:1.82}
 #poster .pcard p:last-child{margin-bottom:0}
@@ -39,7 +42,7 @@
 #poster .pidxt{display:flex;justify-content:space-between;align-items:baseline;font-size:21px;color:#7b848f;margin-bottom:11px}
 #poster .pidxt b{color:#1c2026;font-size:26px}
 #poster .pidxb{height:11px;background:#e5e8ee;border-radius:99px;overflow:hidden}
-#poster .pidxb i{display:block;height:100%;background:linear-gradient(90deg,#f09595,#e8443a);border-radius:99px}
+#poster .pidxb i{display:block;height:100%;background:linear-gradient(90deg,#ffc08a,#ff7a18);border-radius:99px}
 #poster .pidxn{font-size:19px;color:#7b848f;margin-top:12px;line-height:1.7}
 
 /* 定义句 */
@@ -62,7 +65,7 @@
 #poster .pfix li{display:flex;align-items:flex-start;margin-bottom:18px;line-height:1.8;color:#454c56}
 #poster .pfix li:last-child{margin-bottom:0}
 #poster .pfix .cb{flex:0 0 24px;height:24px;border-radius:7px;border:2px solid #cdd3db;margin-right:14px;margin-top:8px;position:relative}
-#poster .pfix li.on .cb{background:#e8443a;border-color:#e8443a}
+#poster .pfix li.on .cb{background:#ff7a18;border-color:#ff7a18}
 #poster .pfix li.on .cb:after{content:'';position:absolute;left:7px;top:2px;width:6px;height:13px;border:solid #fff;border-width:0 3px 3px 0;transform:rotate(42deg)}
 #poster .pfix li.on .tx{color:#9aa2ac;text-decoration:line-through}
 #poster .pfix .tx{flex:1}

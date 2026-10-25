@@ -646,15 +646,13 @@
   function resultHTML(an, mode) {
     var T = an.T, h = '';
     h += '<div class="rhead">';
-    /* 主视觉：这只鬼的可爱图案。存进相册的那张长图主要靠它撑起来，
-       所以放在结果页第一眼的位置（做成主鬼在前、附身鬼在后的双图）。 */
+    /* 主视觉：这只鬼的可爱图案，放第一眼的位置。
+       只放主鬼一张 —— 之前试过「主鬼 + 第二只鬼小图」的双图，
+       两张方图各带自己的渐变底，叠在一起像贴了两张照片，很脏。
+       图案本身是不透明方图，所以按圆形裁切（object-fit:cover），
+       顺带把右下角的生成水印裁出圆外。 */
     if (T.img) {
-      h += '<div class="rghost">'
-        + '<img class="gm" src="ghost/' + esc(T.img) + '" alt="' + esc(T.name) + '">'
-        + (an.secKey && QD.TYPES[an.secKey] && QD.TYPES[an.secKey].img && an.scores[an.secKey] > 0
-          ? '<img class="gs" src="ghost/' + esc(QD.TYPES[an.secKey].img) + '" alt="' + esc(QD.TYPES[an.secKey].name) + '">'
-          : '')
-        + '</div>';
+      h += '<div class="rghost"><img class="gm" src="ghost/' + esc(T.img) + '" alt="' + esc(T.name) + '"></div>';
     }
     h += '<div class="rlab">' + (mode === 'shared' ? 'TA 身上住着' : '你身上住着') + '</div>';
     h += '<div class="rname" style="color:' + an.color + '">' + esc(an.title) + '</div>';
