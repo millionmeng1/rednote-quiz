@@ -924,6 +924,26 @@
 
   function isIOS() { return /iPhone|iPad|iPod/i.test(ua); }
   function isAndroid() { return /Android/i.test(ua); }
+  /* 小红书内置浏览器：长按图片**实测没有菜单**（百万 2026-10-25 实测），
+     所以这个环境里长按保存这条路是死的 —— 必须换一条，见 openXhsSaveGuide。 */
+  function isXHS() { return /Xiaohongshu|xhs|Rednote|RedNote/i.test(ua); }
+
+  /* 这台设备上一次测的结果直接还给他 —— 并且明说「这是上次的」。
+     以前这里一律清空重来：关掉页面再点订单链接就得重新做 18 道题，
+     买家的第一反应是「我买的东西坏了」。现在改成有就还，顶部挂说明 +
+     「换个人测」，想重测一步就能重测。 */
+  function showSavedResult(saved) {
+    S.answers = saved.a.slice();
+    S.share = saved.s || null;
+    S.checked = saved.c || {};
+    S.an = QZ.analyze(S.answers);
+    S.mode = 'own';
+    S.finished = true;
+    S.restored = true;
+    S.restoredAt = saved.t || null;
+    history.replaceState(null, '', '#/result');
+    renderResult();
+  }
 
   /* 系统分享面板 —— **iOS 上真能存进相册的那条路**。
      之前走的是「下载」：iOS Safari 下载只会进「文件 → 下载」，安卓进 Download 目录，
@@ -949,6 +969,81 @@
     if (!can) return 'unsupported';
     return navigator.share({ files: [file] }).then(function () { return 'ok'; })
       .catch(function (e) { return (e && e.name === 'AbortError') ? 'cancelled' : 'unsupported'; });
+  }
+
+  /* 「这份结果」的网址 —— 带 ?r= 分享码，打开就是这一份答案，
+     所以换到别的浏览器打开也不用重新答 18 道题。 */
+  function ownResultUrl() {
+    return location.origin + location.pathname + '?r=' + encodeURIComponent(S.share || '') + '&own=1';
+  }
+
+  /* 分享码是随结果一起生成的；万一点保存时还没生成好（网络慢），这里补一次 */
+  function ensureShare() {
+    if (S.share) return Promise.resolve(S.share);
+    if (!S.token || !S.an || !S.finished) return Promise.resolve('');
+    return api('/api/share', { method: 'POST', body: { token: S.token, answers: S.answers } })
+      .then(function (r) {
+        if (r && r.ok && r.share) { S.share = r.share; saveResult(); return S.share; }
+        return '';
+      }).catch(function () { return ''; });
+  }
+
+  function copyText(text, okMsg, failMsg) {
+    var done = function (ok) { toast(ok ? okMsg : failMsg, 3400); };
+    var el = document.createElement('textarea');
+    el.value = text;
+    el.setAttribute('readonly', '');
+    el.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+    document.body.appendChild(el);
+    var ok = false;
+    try {
+      el.select(); el.setSelectionRange(0, text.length);
+      ok = document.execCommand('copy');
+    } catch (e) { }
+    document.body.removeChild(el);
+    if (!ok && navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(false); });
+      return;
+    }
+    done(ok);
+  }
+
+  /* 小红书内置浏览器里长按图片没有菜单 —— 摆一个长按层就是骗人。
+     所以这个环境里「保存长图」只做一件事：把**带着结果**的网址交给他，
+     让他粘贴到手机浏览器打开，浏览器里长按是能存的（那张图本来就在 https 图床上）。 */
+  function openXhsSaveGuide() {
+    showLoading('正在生成网址…');
+    ensureShare().then(function (share) {
+      hideLoading();
+      var url = share ? ownResultUrl() : '';
+      var body = url
+        ? '<div class="box" style="margin:14px 0"><input id="xhsUrl" class="urlinput" readonly value="' + esc(url) + '"></div>'
+          + '<button class="btn" id="xhsCopy" type="button">复制网址</button>'
+          + '<ol class="steps">'
+          + '<li>点上面的「复制网址」</li>'
+          + '<li>打开手机自带的浏览器（iPhone 用 Safari，安卓用 Chrome / 浏览器）</li>'
+          + '<li>粘贴打开 → 就是你这份结果 → 点「保存长图」→ 按住图片选「下载图片 / 存储到照片」</li>'
+          + '</ol>'
+        : '<p>网址没生成成功，请检查网络后重新点一次「保存长图」。</p>'
+          + '<p>也可以回到订单里复制链接，粘贴到手机浏览器打开再保存。</p>';
+      var d = document.createElement('div');
+      d.className = 'mask';
+      d.innerHTML = '<div class="modal" style="max-width:360px"><button class="close">×</button>'
+        + '<h3>小红书里存不了图</h3>'
+        + '<p>小红书内置浏览器不支持保存图片（长按没有反应）。把网址复制到手机浏览器里打开就能存进相册，'
+        + '打开的还是你刚才这份结果，<b>不用重新做一遍</b>。</p>'
+        + body
+        + '<button class="btn line" id="xhsClose" type="button" style="margin-top:12px">知道了</button></div>';
+      document.body.appendChild(d);
+      function close() { if (d.parentNode) d.parentNode.removeChild(d); }
+      d.querySelector('.close').onclick = close;
+      d.querySelector('#xhsClose').onclick = close;
+      d.onclick = function (e) { if (e.target === d) close(); };
+      var cp = d.querySelector('#xhsCopy');
+      if (cp) cp.onclick = function () {
+        copyText(url, '网址已复制 —— 粘贴到手机浏览器打开', '复制失败 —— 请长按上面的网址手动复制');
+      };
+    });
   }
 
   function posterFail() {
@@ -983,6 +1078,9 @@
     }
     var name = '疲惫类型自测-' + String(S.an.title).replace(/[\s×]/g, '') + '.png';
     S.imgName = name;
+
+    /* 小红书：长按没反应是实测结论，这里不摆长按层，直接给「去浏览器存」的路径 */
+    if (isXHS()) { openXhsSaveGuide(); return; }
 
     /* 安卓：只有「长按图片 → 保存图片」这一条路（理由见 shareImage 的注释），
        所以直接把图铺开让他按，不在分享面板上浪费一次点击。 */
@@ -1055,11 +1153,13 @@
     var menuWord = desktop ? '「图片另存为」' : (ios ? '「存储到照片」' : (inApp ? '「保存图片」' : '「下载图片」'));
     var title = desktop ? ('在图片上点右键 → ' + menuWord) : ('按住图片 2 秒 → 点' + menuWord);
     function hintText(remote) {
+      /* 长按这条路不是每个 App 都通（小红书实测就不通），所以永远留一句退路 */
+      var tail = desktop ? '' : '<br><br>长按没反应：点右上角「···」→「用浏览器打开」，再点一次「保存长图」。';
       if (!remote) return '这张图还没传到网上，长按可能没有菜单。<br>点右上角「···」→「用浏览器打开」，再点一次「保存长图」。';
       if (desktop) return '在图上点右键，选' + menuWord + '，就能存到电脑里。';
-      if (ios) return '手指按在图上别松开，等菜单弹出来，点' + menuWord + '，图就存进相册了。';
-      if (inApp) return '手指按在图上别松开，等菜单弹出来，点' + menuWord + '。<br>存好后打开手机「相册」—— 微信里存的图在「微信」这个相册文件夹里。';
-      return '手指按在图上别松开，等菜单弹出来，点' + menuWord + '。<br>存好后打开「相册」→「下载」文件夹就能看到。';
+      if (ios) return '手指按在图上别松开，等菜单弹出来，点' + menuWord + '，图就存进相册了。' + tail;
+      if (inApp) return '手指按在图上别松开，等菜单弹出来，点' + menuWord + '。<br>存好后打开手机「相册」—— 微信里存的图在「微信」这个相册文件夹里。' + tail;
+      return '手指按在图上别松开，等菜单弹出来，点' + menuWord + '。<br>存好后打开「相册」→「下载」文件夹就能看到。' + tail;
     }
 
     var d = document.createElement('div');
@@ -1150,8 +1250,8 @@
   }
 
   /* ---------------- 分享页（只读） ---------------- */
-  function showShared(code) {
-    S.mode = 'shared';
+  function showShared(code, own) {
+    S.mode = own ? 'own' : 'shared';
     $('shell').classList.remove('hasbar');
     $('actbar').classList.add('hide');
     $('view-result').innerHTML = '<div class="brand">正在打开分享的结果…</div><div class="box"><p>请稍等。</p></div>';
@@ -1179,6 +1279,20 @@
       CFG.buyText = r.buyText || '';
       S.answers = r.answers.slice();
       S.an = QZ.analyze(S.answers);
+      /* own=1：这是本人从小红书复制过来存图的链接，内容就是他刚测的那份。
+         写回本机缓存 —— 之后他直接点订单里的链接也能回到这份结果，不用重测；
+         同时分享码留在本地，再点「保存长图」不用重新联网生成。 */
+      if (own) {
+        S.share = code;
+        S.finished = true;
+        S.restored = false; S.restoredAt = null;
+        S.checked = S.checked || {};
+        saveResult();
+        history.replaceState(null, '', '#/result');
+        renderResult();
+        window.scrollTo(0, 0);
+        return;
+      }
       $('view-result').innerHTML =
         '<div class="brand">' + esc(CFG.shopName || '疲惫类型自测') + '</div>'
         + '<div class="sharedtag">这是一份朋友分享给你的测评结果 —— 往下看就能看到 TA 的完整分析。'
@@ -1221,9 +1335,13 @@
         S.unlimited = r.unlimited === true;
         try { if (S.unlimited) localStorage.setItem(K_UNL, '1'); } catch (e) { }
         try { localStorage.setItem(K_TOKEN, r.token); } catch (e) { }
-        /* 通用口令是永久码 —— 每次进来都是全新一轮，不走「还你上次那份结果」的分支 */
-        try { localStorage.removeItem(K_RESULT); } catch (e) { }
         try { localStorage.removeItem(K_PROG); } catch (e) { }
+        /* 这台设备上还留着上一份结果 → 直接还给他（顶部会挂「这是上次测的」+
+           「换个人测」），不要让他再答一遍 18 道题。
+           以前这里是一律清空重来：关掉页面再点订单链接就从第一题开始，
+           买家只会以为自己买的东西坏了。 */
+        var saved = readResult();
+        if (saved) { showSavedResult(saved); return; }
         showLanding();
         return;
       }
@@ -1236,9 +1354,10 @@
     try { S.token = localStorage.getItem(K_TOKEN) || null; } catch (e) { S.token = null; }
     try { S.unlimited = localStorage.getItem(K_UNL) === '1'; } catch (e) { S.unlimited = false; }
     var h = location.hash.replace(/^#\/?/, '');
-    /* 分享链接优先走查询串（?r=xxx），hash 版当兜底 —— 见 qsGet 的说明 */
+    /* 分享链接优先走查询串（?r=xxx），hash 版当兜底 —— 见 qsGet 的说明。
+       own=1 表示这是本人从小红书复制过来存图的链接，不是朋友转发来的。 */
     var shared = qsGet('r');
-    if (shared) { showShared(shared); return; }
+    if (shared) { showShared(shared, qsGet('own') === '1'); return; }
     if (h.indexOf('r/') === 0) { showShared(h.slice(2)); return; }
 
     /* 扫二维码进来 + 后台配了商品链接 → 直接送商品页，不用再点一次按钮 */
@@ -1278,16 +1397,10 @@
       if (S.resultAt) {
         if (h !== 'result') { history.replaceState(null, '', '#/result'); }
         if (saved) {
-          S.answers = saved.a.slice();
-          S.share = saved.s || null;
-          S.checked = saved.c || {};
-          S.an = QZ.analyze(S.answers);
           /* 这台设备上一次测的结果被调了出来 —— 必须让他一眼看出「这是旧的」，
              否则同一个人换台手机、或者下一个人拿这台手机点开链接，都会以为
              「我刚买的怎么直接给我看别人的结果」。 */
-          S.restored = true;
-          S.restoredAt = saved.t || null;
-          renderResult();
+          showSavedResult(saved);
         } else if (S.unlimited) {
           /* 永久码 + 本地缓存没了：不装作「结果丢了」，直接让他重来一轮 */
           showLanding();
@@ -1296,14 +1409,7 @@
         }
         return;
       }
-      if (h === 'result' && saved) {
-        S.answers = saved.a.slice();
-        S.share = saved.s || null;
-        S.checked = saved.c || {};
-        S.an = QZ.analyze(S.answers);
-        renderResult();
-        return;
-      }
+      if (h === 'result' && saved) { showSavedResult(saved); return; }
       if (h === 'quiz') { startQuiz(); return; }
       if (h === 'result') { history.replaceState(null, '', '#/'); }
       showLanding();
