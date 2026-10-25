@@ -388,7 +388,7 @@
           ? '<div class="msg err" style="margin:0 0 12px">' + esc(SB_PROBLEM)
             + '若持续出现，可以在小红书订单里联系店铺客服。</div>'
           : ''))
-      + '<div class="pin"><input id="pwd" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="例如 LEI-TEST-2026" maxlength="24" value="' + esc(prefill || '') + '"></div>'
+      + '<div class="pin"><input id="pwd" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="例如 GHOST-TEST-2026" maxlength="24" value="' + esc(prefill || '') + '"></div>'
       + '<button class="btn" id="goBtn">验证并开始</button>'
       + '<div class="msg" id="gmsg"></div>'
       + '</div>'
