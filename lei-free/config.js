@@ -4,4 +4,4 @@ window.SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXB
 
 /* 免卡密版：通用口令 + 长图二维码去向 */
 window.PUBLIC_CODE = "LEI-TEST-2026";
-window.POSTER_QR   = "test";
+window.POSTER_QR   = "buy";

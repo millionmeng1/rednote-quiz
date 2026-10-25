@@ -28,6 +28,17 @@
     } catch (e) { return ''; }
   }
 
+  /* 读地址栏参数（通用版）。分享链接以前用 hash（#/r/xxxx），
+     小红书 / 微信的内置浏览器转发时会把 # 后面的整段吃掉，链接发出去
+     就成了裸域名 —— 打开直接落在口令屏，看起来像「分享功能是坏的」。
+     所以分享链接改用查询串 ?r=，转发时不会被截。旧 hash 链接照样认。 */
+  function qsGet(key) {
+    try {
+      var m = new RegExp('(?:^|[?&])' + key + '=([^&#]*)', 'i').exec(location.search || '');
+      return m ? decodeURIComponent(m[1] || '').trim() : '';
+    } catch (e) { return ''; }
+  }
+
   /* ---------------- 小工具 ---------------- */
   function $(id) { return document.getElementById(id); }
   function esc(s) {
@@ -693,11 +704,12 @@
         + '</div>';
       bar.classList.remove('hide');
       bindBuy();
+      /* 看过别人结果的人点了「我也要测」—— 他没付过钱，不该白送一轮，
+         但更不该把他丢回「输入口令」那一屏（那屏对他来说就是个死胡同，
+         他根本不知道口令是什么）。直接送商品页：他拍下就有自己的链接。 */
       $('ctaBtn').onclick = function () {
-        S.authed = false; S.token = null;
-        try { localStorage.removeItem(K_TOKEN); localStorage.removeItem(K_RESULT); } catch (e) { }
-        history.replaceState(null, '', '#/');
-        bootFresh();
+        if (CFG.buyUrl) { goBuy(true); return; }
+        openBuyModal();
       };
       return;
     }
@@ -795,10 +807,17 @@
      —— 之前只有「长按保存」一条路，而 iOS Safari 对超长 data: 地址的图经常
         弹不出「存储到照片」，点了以为存了其实没存。现在三条路都给：
         ①「保存到相册」按钮（走 a[download]）；② 长按图片；③ 发给朋友。
-        图片地址也从 dataURL 换成 blob: —— 长按菜单稳定得多。 */
+        图片地址也从 dataURL 换成 blob: —— 长按菜单稳定得多。
+
+     2026-10-25：小红书 / 微博 / QQ 这类 App 内置浏览器点了「保存」常常什么都不
+     发生，却照样弹「已保存」——那是骗人的反馈。这类环境里干脆不摆按钮，
+     只留「长按图片」这条确定能走通的路，省得买家以为存好了其实没存。 */
   function openPreview(url, name) {
+    var isApp = /MicroMessenger|Weibo|QQ\/|Xiaohongshu|xhs|Rednote|RedNote|DingTalk|AlipayClient/i.test(ua);
     var canShare = !isWeChat && typeof navigator.canShare === 'function' && typeof File === 'function';
     var isIOS = /iPhone|iPad|iPod/i.test(ua);
+    /* 内置浏览器（含微信）不给「保存」按钮 —— 摆着点了没反应，比不摆更糟 */
+    var canSave = !isApp;
 
     var showUrl = url, objectUrl = null;
     try {
@@ -806,9 +825,9 @@
       showUrl = objectUrl;
     } catch (e) { /* 拿不到 blob 就退回 dataURL，不影响后面的路 */ }
 
-    var hint = isWeChat
-      ? '微信里请长按下面这张图 →「保存图片」'
-      : '点上面的「保存到相册」；没反应就长按图片 →「保存图片」';
+    var hint = canSave
+      ? '先点上面的「保存到相册」；没反应就长按图片 →「保存图片」'
+      : '长按下面这张图 →「保存图片」（这个浏览器不支持一键保存）';
     var where = isIOS
       ? 'iPhone：长按存的会进「照片」；用按钮存的可能只进「文件 → 下载」。'
       : '安卓：一般直接进相册，也可能在「文件管理 → 下载」。';
@@ -817,8 +836,8 @@
     d.className = 'pv';
     d.innerHTML =
       '<div class="pvtop">'
-      + '<div class="t"><b>结果长图已生成</b><span>' + (isWeChat ? '长按图片即可保存' : '存到相册或直接分享') + '</span></div>'
-      + '<button id="pvSave">保存到相册</button>'
+      + '<div class="t"><b>结果长图已生成</b><span>' + (canSave ? '存到相册或直接分享' : '长按图片即可保存') + '</span></div>'
+      + (canSave ? '<button id="pvSave">保存到相册</button>' : '')
       + (canShare ? '<button id="pvShare">发给朋友</button>' : '')
       + '<button id="pvClose">关闭</button>'
       + '</div>'
@@ -832,9 +851,13 @@
     }
     d.querySelector('#pvClose').onclick = close;
 
-    d.querySelector('#pvSave').onclick = function () {
+    var sv = d.querySelector('#pvSave');
+    if (sv) sv.onclick = function () {
       download(showUrl, name);
-      toast(isIOS ? '已保存，去「照片」或「文件 → 下载」看看' : '已保存，去相册或「下载」里看看');
+      /* 只说「已触发」，不说「已保存」—— 保存到没保存由系统决定，
+         说死了而相册里没有，买家第一反应就是「这东西是坏的」。 */
+      toast(isIOS ? '已触发保存 —— 没反应就长按图片存到「照片」'
+        : '已触发保存 —— 没反应就长按图片存到相册', 3600);
     };
 
     if (canShare) {
@@ -867,7 +890,9 @@
     showLoading('正在生成分享链接…');
     need.then(function (code) {
       hideLoading();
-      var url = location.origin + location.pathname + '#/r/' + code;
+      /* 用查询串而不是 hash —— 转发时 # 后面的内容常被内置浏览器吃掉，
+         那样朋友点开只会看到口令屏，等于分享了个空链接。 */
+      var url = location.origin + location.pathname + '?r=' + encodeURIComponent(code);
       S.link = url;
       return copyText(url).then(function (ok) {
         if (ok) toast('链接已复制，发给朋友就能看到你的结果');
@@ -970,7 +995,10 @@
         $('actbar').classList.add('hide');
         bindBuy();
         var b = $('ctaBtn');
-        if (b) b.onclick = function () { history.replaceState(null, '', '#/'); location.reload(); };
+        if (b) b.onclick = function () {
+          if (CFG.buyUrl) { goBuy(true); return; }
+          openBuyModal();
+        };
         return;
       }
       if (r.shopName) CFG.shopName = r.shopName;
@@ -1037,6 +1065,9 @@
     try { S.token = localStorage.getItem(K_TOKEN) || null; } catch (e) { S.token = null; }
     try { S.unlimited = localStorage.getItem(K_UNL) === '1'; } catch (e) { S.unlimited = false; }
     var h = location.hash.replace(/^#\/?/, '');
+    /* 分享链接优先走查询串（?r=xxx），hash 版当兜底 —— 见 qsGet 的说明 */
+    var shared = qsGet('r');
+    if (shared) { showShared(shared); return; }
     if (h.indexOf('r/') === 0) { showShared(h.slice(2)); return; }
 
     /* 扫二维码进来 + 后台配了商品链接 → 直接送商品页，不用再点一次按钮 */
@@ -1069,10 +1100,11 @@
         return;
       }
       var saved = readResult();
-      /* 这张码已经出过结果了 —— 不管本地有没有缓存，都不再给「开始测试」这条路。
-         以前只有 #/quiz、#/result 两种情况被挡住，直接开首页（不带 hash）照样能
-         点「开始测试」再答一遍，看起来就是「测完还能再测一次」。 */
-      if (S.resultAt && !S.unlimited) {
+      /* 已经出过结果 —— 不管本地有没有缓存，都先把人送回结果页。
+         以前这里对永久码（unlimited）网开一面，裸域名进来一律给「开始测试」，
+         结果就是：关掉页面再进来，上一份结果不见了 —— 买家只会认为东西是坏的。
+         永久码照样回结果页：那页本来就有「再测一次」，想重测一步就能重测。 */
+      if (S.resultAt) {
         if (h !== 'result') { history.replaceState(null, '', '#/result'); }
         if (saved) {
           S.answers = saved.a.slice();
@@ -1080,6 +1112,9 @@
           S.checked = saved.c || {};
           S.an = QZ.analyze(S.answers);
           renderResult();
+        } else if (S.unlimited) {
+          /* 永久码 + 本地缓存没了：不装作「结果丢了」，直接让他重来一轮 */
+          showLanding();
         } else {
           showLostResult();
         }
