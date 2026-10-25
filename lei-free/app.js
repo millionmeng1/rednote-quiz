@@ -922,16 +922,23 @@
     }).catch(function () { });
   }
 
-  /* 系统分享面板 —— **这才是真能存进相册的那条路**。
+  function isIOS() { return /iPhone|iPad|iPod/i.test(ua); }
+  function isAndroid() { return /Android/i.test(ua); }
+
+  /* 系统分享面板 —— **iOS 上真能存进相册的那条路**。
      之前走的是「下载」：iOS Safari 下载只会进「文件 → 下载」，安卓进 Download 目录，
      两个都不在相册里，买家打开相册找不到，第一反应就是「根本没存上」。
-     而系统分享面板里 iOS 一定有「存储到照片」（就在第一排），点一下直接进相册；
+     而 iOS 的系统分享面板里一定有「存储到照片」（就在第一排），点一下直接进相册；
      顺带还能直接发微信 —— 图片不受域名限制，正好绕开微信拦外链那个坑。
-     所以这是一个动作，不是多一条路：点一下 → 面板 → 选「存储到照片」或「微信」。
+
+     **安卓不走这条**：安卓的分享面板里没有「存储到照片」这一项，全是分享给某个 App，
+     点了之后系统照样提示"已分享"，买家以为存进了相册，打开相册却是空的 ——
+     这正是实测里踩到的坑。安卓唯一确定能进相册的是「长按图片 → 保存图片」，见 openPreview。
      同步返回 'unsupported' 而不是 Promise，是为了能在点击的同一轮里立刻发起
      navigator.share —— iOS 要求它在用户手势内调用，绕一圈异步就会失活。 */
   function shareImage() {
     var name = S.imgName || '疲惫类型自测.png';
+    if (!isIOS()) return 'unsupported';
     if (!S.imgBlob || typeof File !== 'function') return 'unsupported';
     if (!navigator.share || !navigator.canShare) return 'unsupported';
     var file;
@@ -944,6 +951,30 @@
       .catch(function (e) { return (e && e.name === 'AbortError') ? 'cancelled' : 'unsupported'; });
   }
 
+  function posterFail() {
+    openInfoModal('生成失败', '<p>抱歉，自动生成图片的时候出错了。</p><p>你可以直接对当前页面截屏保存，效果是一样的。</p>');
+  }
+
+  /* 安卓的保存入口：把已经备好的网络长图铺开，让买家长按。
+     图没备好就等后台那一份 —— **不在这里重新渲染**，之前重复渲染导致
+     点第二次还要再卡好几秒。 */
+  function openPosterSave(name) {
+    if (S.imgBlob && S.imgKey === imgKeyNow()) {
+      openPreview(S.remoteImg || S.img, name);
+      return;
+    }
+    showLoading('正在准备图片…');
+    var wait = S.prewarm || Promise.resolve(null);
+    var to = setTimeout(function () { hideLoading(); }, 15000);
+    wait.then(function () {
+      clearTimeout(to); hideLoading();
+      if (!S.img) { posterFail(); return; }
+      openPreview(S.remoteImg || S.img, name);
+    }).catch(function () {
+      clearTimeout(to); hideLoading(); posterFail();
+    });
+  }
+
   function saveImage() {
     if (!S.an) return;
     if (typeof html2canvas !== 'function') {
@@ -952,6 +983,10 @@
     }
     var name = '疲惫类型自测-' + String(S.an.title).replace(/[\s×]/g, '') + '.png';
     S.imgName = name;
+
+    /* 安卓：只有「长按图片 → 保存图片」这一条路（理由见 shareImage 的注释），
+       所以直接把图铺开让他按，不在分享面板上浪费一次点击。 */
+    if (isAndroid()) { openPosterSave(name); return; }
 
     /* 图已经备好了 → 就在这一次点击里同步发起系统分享，保住 iOS 要的用户手势 */
     if (S.imgBlob && S.imgKey === imgKeyNow()) {
@@ -1013,14 +1048,27 @@
       } catch (e) { /* 拿不到 blob 就退回 dataURL，不影响长按 */ }
     }
 
+    var inApp = !canDownload();                       /* 微信 / 小红书 / QQ 内置浏览器 */
+    var ios = isIOS();
+    var desktop = !/Android|iPhone|iPad|iPod|Mobile/i.test(ua);
+    /* 菜单里那一项的叫法每个环境都不一样，写错了买家对着菜单找不到 */
+    var menuWord = desktop ? '「图片另存为」' : (ios ? '「存储到照片」' : (inApp ? '「保存图片」' : '「下载图片」'));
+    var title = desktop ? ('在图片上点右键 → ' + menuWord) : ('按住图片 2 秒 → 点' + menuWord);
+    function hintText(remote) {
+      if (!remote) return '这张图还没传到网上，长按可能没有菜单。<br>点右上角「···」→「用浏览器打开」，再点一次「保存长图」。';
+      if (desktop) return '在图上点右键，选' + menuWord + '，就能存到电脑里。';
+      if (ios) return '手指按在图上别松开，等菜单弹出来，点' + menuWord + '，图就存进相册了。';
+      if (inApp) return '手指按在图上别松开，等菜单弹出来，点' + menuWord + '。<br>存好后打开手机「相册」—— 微信里存的图在「微信」这个相册文件夹里。';
+      return '手指按在图上别松开，等菜单弹出来，点' + menuWord + '。<br>存好后打开「相册」→「下载」文件夹就能看到。';
+    }
+
     var d = document.createElement('div');
     d.className = 'pv';
     d.innerHTML =
       '<button class="pvx" id="pvClose" type="button" aria-label="关闭">×</button>'
-      + '<div class="pvbar"><b>按住图片 2 秒 →「保存图片」</b></div>'
+      + '<div class="pvbar"><b id="pvTitle">' + esc(title) + '</b></div>'
       + '<div class="pvbody"><img src="' + showUrl + '" alt="我的测评结果长图">'
-      + '<div class="hint">手指按在图上别松开，等菜单弹出来，点菜单里的「保存图片」或「存储到照片」。<br>'
-      + '按了没菜单：点右上角「···」→「用浏览器打开」，在浏览器里再点一次「保存长图」。</div>'
+      + '<div class="hint" id="pvHint">' + hintText(isRemote) + '</div>'
       + '</div>';
     document.body.appendChild(d);
 
@@ -1034,7 +1082,12 @@
       var img = d.querySelector('img');
       uploadPoster(url).then(function (remote) {
         /* 只有在浮层还开着、且真的传成功了才换 —— 换失败保持本地图 */
-        if (remote && img && img.parentNode && d.parentNode) img.src = remote;
+        if (!remote || !img || !img.parentNode || !d.parentNode) return;
+        img.src = remote;
+        /* 图换成网络地址了，说明长按有戏，把提示也换成对应的那句话 */
+        var h = d.querySelector('#pvHint'), t = d.querySelector('#pvTitle');
+        if (t) t.textContent = title;
+        if (h) h.innerHTML = hintText(true);
       });
     }
   }
