@@ -375,9 +375,9 @@
     $('view-gate').innerHTML =
       '<div class="brand">' + esc(CFG.shopName || '万圣节鬼形自测') + '</div>'
       + '<h1>' + esc(CFG.quizTitle || '你现在的累，是哪一种累？') + '</h1>'
-      + '<p class="lead">大多数人只会说「我好累」，说不清是哪里累。<br>这个测试不给你分数，它给这种累一个名字。</p>'
+      + '<p class="lead">你不是最近才变成这样的。<br>有只鬼早就住进来了 —— 它当初，是来帮你的。</p>'
       + (fromQR() ? qrChipHTML() : '')
-      + '<div class="facts"><span class="fact">18 道题 · 约 3 分钟</span><span class="fact">6 个维度 · 7 种结果</span><span class="fact">每种累附恢复处方</span></div>'
+      + '<div class="facts"><span class="fact">12 道题 · 约 2 分钟</span><span class="fact">7 只鬼 · 21 种组合</span><span class="fact">每种附送它走的第一步</span></div>'
       + buyHTML()
       + '<div class="gate">'
       + '<h2>请输入口令</h2>'
@@ -393,7 +393,7 @@
       + '<div class="msg" id="gmsg"></div>'
       + '</div>'
       + kefuHTML()
-      + '<div class="box" style="margin-top:14px"><p><b>怎么作答：</b>不用想太久，凭第一反应选频率就行。没有对错，也没有「应该」的答案。</p>'
+      + '<div class="box" style="margin-top:14px"><p><b>怎么作答：</b>不用想太久，凭第一反应选最像你的那个场景。没有对错，也没有「应该」的答案。</p>'
       + '<p><b>你会得到：</b>你身上那只鬼的名字、一张七鬼附身度图、三条今天就能做的事。</p></div>';
     show('view-gate');
 
@@ -498,10 +498,10 @@
     $('view-landing').innerHTML =
       '<div class="brand">' + esc(CFG.shopName || '万圣节鬼形自测') + '</div>'
       + '<h1>' + esc(CFG.quizTitle || '你现在的累，是哪一种累？') + '</h1>'
-      + '<p class="lead">大多数人只会说「我好累」，说不清是哪里累。<br>这个测试不给你分数，它给这种累一个名字。</p>'
-      + '<div class="facts"><span class="fact">18 道题 · 约 3 分钟</span><span class="fact">6 个维度 · 7 种结果</span><span class="fact">每种累附恢复处方</span></div>'
+      + '<p class="lead">你不是最近才变成这样的。<br>有只鬼早就住进来了 —— 它当初，是来帮你的。</p>'
+      + '<div class="facts"><span class="fact">12 道题 · 约 2 分钟</span><span class="fact">7 只鬼 · 21 种组合</span><span class="fact">每种附送它走的第一步</span></div>'
       + '<div class="box">'
-      + '<p><b>怎么作答：</b>不用想太久，凭第一反应选频率就行。没有对错，也没有「应该」的答案。答完可以返回上一题改选。</p>'
+      + '<p><b>怎么作答：</b>不用想太久，凭第一反应选最像你的那个场景。没有对错，也没有「应该」的答案。答完可以返回上一题改选。</p>'
       + '<p><b>你会得到：</b>你身上那只鬼的名字、一张七鬼附身度图、三条今天就能做的事。结果可以存成一张长图带走。</p>'
       + '</div>'
       + '<button class="btn" id="startBtn">开始测试</button>'
@@ -691,13 +691,13 @@
     h += '</ol></div>';
 
     if (mode === 'own') {
-      h += '<div class="blk"><div class="lb">恢复处方 · 点一下就是今天做到了</div><ul class="fix" id="fixlist">';
+      h += '<div class="blk"><div class="lb">送它走的第一步 · 点一下就是今天做到了</div><ul class="fix" id="fixlist">';
       T.fix.forEach(function (f, i) {
         h += '<li class="' + (S.checked[i] ? 'on' : '') + '" data-i="' + i + '"><span class="cb"></span><span class="tx">' + f + '</span></li>';
       });
       h += '</ul><div class="fixcount" id="fixcount"></div></div>';
     } else {
-      h += '<div class="blk"><div class="lb">恢复处方</div><ul>' + T.fix.map(function (f) { return '<li>' + f + '</li>'; }).join('') + '</ul></div>';
+      h += '<div class="blk"><div class="lb">送它走的第一步</div><ul>' + T.fix.map(function (f) { return '<li>' + f + '</li>'; }).join('') + '</ul></div>';
     }
 
     h += '<div class="last">' + esc(T.last) + '</div>';

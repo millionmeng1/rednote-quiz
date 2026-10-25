@@ -42,7 +42,7 @@
       + '<div class="plab">我身上住着</div>'
       + '<div class="pname">' + esc(an.title) + '</div>'
       + '<div class="psub">' + esc(T.name) + '｜' + esc(T.sub) + '<br>' + esc(T.en) + '</div>'
-      + '<div class="pflag">阳气剩余 ' + an.index + ' / 100</div>'
+      + '<div class="pflag">阳气 · ' + esc(an.band) + '</div>'
       + '</div>';
 
     /* 雷达 + 图例 + 指数 */
