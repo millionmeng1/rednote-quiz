@@ -1546,6 +1546,13 @@
         }
         return;
       }
+      /* ★ 免密模式的关键一步：永久码**不登记 result_at**（它要能一直重来），
+         所以上面的 S.resultAt 永远是 null。以前这里只认 resultAt，于是
+         「测完 → 关掉页面 → 再点订单里那条链接」会掉回「开始测试」——
+         买家看到的就是「我刚测的结果没了」，只能再答 12 题。
+         现在只要本机还留着那份结果，就直接还给他（顶部有「这是上次测的」，
+         想重测一步就能重测）。 */
+      if (saved) { showSavedResult(saved); return; }
       if (h === 'result' && saved) { showSavedResult(saved); return; }
       if (h === 'quiz') { startQuiz(); return; }
       if (h === 'result') { history.replaceState(null, '', '#/'); }
