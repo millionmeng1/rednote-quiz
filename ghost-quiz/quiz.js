@@ -23,10 +23,16 @@
       var opt = q.o[a - 1];
       if (opt && hit[opt.g] !== undefined) hit[opt.g]++;
     });
-    var s = {};
+    /* dim  = 取整后的百分数，只用于显示。
+       raw  = 没取整的精确比值，用于排名。
+       只按 dim 排的话，1/6=17% 和 2/12≈17% 会打平，平票时谁在前面谁赢 ——
+       实测 15.7% 的人会撞上这种平票，而且永远偏向加班鬼/穷鬼/僵尸这三只靠前的，
+       熬夜鬼和冤鬼被系统性压低。排名必须用 raw。 */
+    var s = {}, raw = {};
     DIMS.forEach(function (d) {
       var total = QD.GCOUNT[d] || 1;
-      s[d] = Math.round(hit[d] / total * 100);
+      raw[d] = hit[d] / total;
+      s[d] = Math.round(raw[d] * 100);
     });
     var vals = DIMS.map(function (d) { return s[d]; });
     var mean = vals.reduce(function (a, b) { return a + b; }, 0) / N;
@@ -34,14 +40,18 @@
     var top2 = (sorted[0] + sorted[1]) / 2;
     /* 「阴气」= 附身程度；阳气剩余 = 100 - 阴气。数值越低越阴，符合万圣节的读法 */
     var yin = Math.max(0, Math.min(100, Math.round(0.55 * top2 + 0.45 * mean)));
-    return { dim: s, hit: hit, yin: yin, index: 100 - yin, mean: mean, max: sorted[0] };
+    return { dim: s, raw: raw, hit: hit, yin: yin, index: 100 - yin, mean: mean, max: sorted[0] };
   }
 
   /* ---------- 结果解析 ---------- */
   function analyze(answers) {
     var r = computeScores(answers);
+    /* 排名用 raw（精确比值），不是 dim（取整百分数）。
+       精确到 raw 还平手的话，看谁被实际选中的次数更多 —— 那是更硬的证据。
+       最后才轮到固定顺序兜底。 */
     var order = DIMS.slice().sort(function (a, b) {
-      if (r.dim[b] !== r.dim[a]) return r.dim[b] - r.dim[a];
+      if (r.raw[b] !== r.raw[a]) return r.raw[b] - r.raw[a];
+      if (r.hit[b] !== r.hit[a]) return r.hit[b] - r.hit[a];
       return DIMS.indexOf(a) - DIMS.indexOf(b);
     });
     var mainKey = order[0], secKey = order[1];
@@ -85,7 +95,7 @@
       : (lowSec ? DIMNAME[mainKey] : DIMNAME[mainKey] + ' × ' + DIMNAME[secKey]);
 
     return {
-      scores: r.dim, hit: r.hit, index: r.index, order: order,
+      scores: r.dim, raw: r.raw, hit: r.hit, index: r.index, order: order,
       mainKey: mainKey, secKey: secKey, highLoad: highLoad,
       lowSec: lowSec, flat: flat,
       typeKey: mainKey, T: TYPES[mainKey], color: DIMCOLOR[mainKey],
