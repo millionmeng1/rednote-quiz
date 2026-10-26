@@ -622,6 +622,11 @@
         S.share = r.share;
         S.resultAt = r.resultAt || S.resultAt || new Date().toISOString();
         setResultUrl();
+        /* ★ 分享码回来了，必须重存一次本地结果。
+           上面的 saveResult() 是在等接口**之前**调的，那时 S.share 还是 null，
+           缓存里存的是一份没有分享码的结果 —— 于是「关掉页面再点链接」回来时
+           地址栏拼不出 ?r=，那份结果只能自己看、发不出去。 */
+        saveResult();
         /* 服务端说「这张码早就出过结果了」：说明这次是重复提交（绕过了入口硬答的，
            或者网络慢、点了两次）。把原来那份答案换回来重画 —— 不然页面显示的是
            他刚瞎选的，而分享链接指向的还是原来那份，长图和链接会对不上。 */
@@ -1535,6 +1540,13 @@
         }
         return;
       }
+      /* ★ 免密模式的关键一步：永久码**不登记 result_at**（它要能一直重来），
+         所以上面的 S.resultAt 永远是 null。以前这里只认 resultAt，于是
+         「测完 → 关掉页面 → 再点订单里那条链接」会掉回「开始测试」——
+         买家看到的就是「我刚测的结果没了」，只能再答 18 题。
+         现在只要本机还留着那份结果，就直接还给他（顶部有「这是上次测的」，
+         想重测点底部的「再测一次」）。 */
+      if (saved) { showSavedResult(saved); return; }
       if (h === 'result' && saved) { showSavedResult(saved); return; }
       if (h === 'quiz') { startQuiz(); return; }
       if (h === 'result') { history.replaceState(null, '', '#/'); }
