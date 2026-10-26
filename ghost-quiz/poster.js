@@ -94,7 +94,7 @@
        （那需要先在后台填上 buyUrl，否则会退回指向本站）。 */
     var direct = String(window.POSTER_QR || 'test').toLowerCase() === 'buy' && !!cfg.buyUrl;
     html += '<div class="pfoot">'
-      + '<div class="f1">' + esc(cfg.quizTitle || '你现在的累，是哪一种累？') + '</div>'
+      + '<div class="f1">' + esc(cfg.quizTitle || '万圣节前夜，你身上住着哪只鬼？') + '</div>'
       + '<div class="f2">出自「' + esc(cfg.shopName || '') + '」<br>12 题 · 7 只鬼 · 21 种组合</div>'
       + '<div class="pqr">'
       + '<canvas id="p-qr" class="pqrc"></canvas>'
