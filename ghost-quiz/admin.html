@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>万圣节款 · 后台</title>
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--ink:#1c2026;--ink2:#454c56;--ink3:#7b848f;--line:#e5e8ee;--red:#e8443a;--soft:#fdeceb;--ok:#1a7f5a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);line-height:1.7;
+ font-family:"PingFang SC","Microsoft YaHei",Arial,sans-serif;font-size:14px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:960px;margin:0 auto;padding:26px 18px 60px}
+h1{font-size:22px;margin:0 0 4px;letter-spacing:-.3px}
+.sub{color:var(--ink3);font-size:13px;margin:0 0 22px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:16px}
+.card h2{font-size:15px;margin:0 0 14px;letter-spacing:-.2px}
+label{display:block;font-size:12.5px;color:var(--ink3);margin-bottom:5px}
+input[type=text],input[type=number]{width:100%;padding:11px 13px;border:1.5px solid var(--line);border-radius:11px;font-size:14px;
+ font-family:inherit;outline:none;background:#fbfcfd;color:var(--ink)}
+input:focus{border-color:var(--red);background:#fff}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.grid.wide{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+button{cursor:pointer;font-family:inherit;border:none;border-radius:11px;padding:11px 18px;font-size:14px;font-weight:600;
+ background:var(--red);color:#fff;transition:opacity .15s}
+button:hover{opacity:.9}
+button.ghost{background:var(--card);color:var(--ink2);border:1px solid var(--line);font-weight:500}
+button.mini{padding:6px 11px;font-size:12.5px;border-radius:9px;font-weight:500}
+button.mini.g{background:#eef4ec;color:#1a7f5a}
+button.mini.r{background:#fbeceb;color:#c62f28}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.stat .n{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+.stat .l{font-size:12.5px;color:var(--ink3)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid #f1f3f6;white-space:nowrap}
+th{color:var(--ink3);font-weight:600;font-size:12px;background:#fbfcfd;position:sticky;top:0}
+td code{font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:700;font-size:13.5px;letter-spacing:.03em}
+.tblwrap{max-height:420px;overflow:auto;border:1px solid var(--line);border-radius:12px;margin-top:4px}
+.badge{display:inline-block;font-size:11.5px;padding:2px 9px;border-radius:999px;font-weight:600}
+.badge.u{background:#fbeceb;color:#c62f28}
+.badge.f{background:#eef4ec;color:#1a7f5a}
+.badge.d{background:#e8f0fe;color:#1a56c4}
+.row{display:flex;gap:9px;flex-wrap:wrap;align-items:flex-end;margin-top:14px}
+.hint{font-size:12.5px;color:var(--ink3);margin-top:12px;line-height:1.8}
+.note{background:var(--soft);border-radius:12px;padding:14px 16px;font-size:13.5px;color:#791f1f;margin-bottom:16px}
+.hide{display:none!important}
+.login{max-width:420px;margin:12vh auto 0}
+.toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:rgba(28,32,38,.94);color:#fff;
+ padding:11px 20px;border-radius:999px;font-size:14px;z-index:99}
+ol.steps{padding-left:20px;color:var(--ink2);font-size:13.5px;margin:0}
+ol.steps li{margin-bottom:7px}
+.dist{display:flex;flex-direction:column;gap:11px}
+.distrow{display:grid;grid-template-columns:74px 1fr 96px;align-items:center;gap:10px}
+.distnm{font-size:13px;font-weight:600}
+.distbar{height:10px;background:#eef1f5;border-radius:999px;overflow:hidden}
+.distbar i{display:block;height:100%;border-radius:999px}
+.distn{font-size:12.5px;text-align:right;font-variant-numeric:tabular-nums;color:var(--ink2)}
+.ok{background:#eef4ec;border-radius:12px;padding:14px 16px;font-size:13.5px;color:#14532d;margin-bottom:14px}
+code.k{background:#f1f3f6;border-radius:5px;padding:1px 5px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- 登录 -->
+  <div id="loginBox" class="card login">
+    <h1>密码管理后台</h1>
+    <p class="sub">管理密钥存在数据库里。忘了就在 Supabase 的 SQL Editor 里跑一句：<code class="k">select admin_key from app_secrets;</code></p>
+    <label>管理密钥</label>
+    <input type="text" id="keyInput" placeholder="LEI-XXXX-XXXX" autocomplete="off">
+    <div class="row"><button id="loginBtn" style="flex:1">进入后台</button></div>
+    <div class="hint" id="loginMsg"></div>
+  </div>
+
+  <!-- 主体 -->
+  <div id="mainBox" class="hide">
+    <h1>密码管理后台</h1>
+    <p class="sub">一次性密码 · 每个密码只能完整测试一次</p>
+
+    <div class="stats">
+      <div class="stat"><div class="n" id="stTotal">0</div><div class="l">密码总数</div></div>
+      <div class="stat"><div class="n" id="stUnused" style="color:#1a7f5a">0</div><div class="l">未使用（可发）</div></div>
+      <div class="stat"><div class="n" id="stUsed" style="color:#c62f28">0</div><div class="l">已开始答题</div></div>
+      <div class="stat"><div class="n" id="stDone" style="color:#1a56c4">0</div><div class="l">已完成测试</div></div>
+    </div>
+
+    <div class="card">
+      <h2>① 批量生成密码</h2>
+      <div class="grid">
+        <div><label>生成数量</label><input type="number" id="genCount" value="100" min="1" max="2000"></div>
+        <div><label>前缀（可选）</label><input type="text" id="genPrefix" value="GHOST"></div>
+        <div><label>批次名（方便对账）</label><input type="text" id="genBatch" placeholder="例如 1012-第一批"></div>
+        <div><label>备注（可选）</label><input type="text" id="genNote" placeholder="例如 0.98元链接"></div>
+      </div>
+      <div class="row">
+        <button id="genBtn">生成密码</button>
+        <button class="ghost" id="copyNewBtn">复制本批密码（每行一个）</button>
+        <button class="ghost" id="csvBtn">导出全部为 CSV</button>
+      </div>
+      <div class="hint">买家下单后，从下表复制任意一个「未使用」的密码发给他即可。生成后建议立刻导出 CSV 存一份。</div>
+    </div>
+
+    <div class="card">
+      <h2>② 密码列表</h2>
+      <div class="grid" style="margin-bottom:12px">
+        <div><label>搜索（密码 / 批次 / 备注）</label><input type="text" id="qInput" placeholder="输入关键词"></div>
+        <div><label>筛选</label>
+          <select id="fSelect" style="width:100%;padding:11px 13px;border:1.5px solid var(--line);border-radius:11px;font-size:14px;font-family:inherit;background:#fbfcfd">
+            <option value="all">全部</option><option value="unused">只看未使用</option><option value="used">只看已开始</option><option value="done">只看已完成</option><option value="perm">只看永久密码</option>
+          </select></div>
+      </div>
+      <div class="tblwrap">
+        <table>
+          <thead><tr><th>密码</th><th>状态</th><th>批次</th><th>备注</th><th>生成时间</th><th>使用 / 完成</th><th>操作</th></tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div class="row">
+        <button class="ghost" id="refreshBtn">刷新</button>
+        <button class="ghost" id="pruneBtn">清理已使用的密码</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>③ 测评结果分布</h2>
+      <div class="hint" style="margin:0 0 14px">统计买家测出来的「主维度」。这个数字能直接指导内容：占比最高的那种累，最值得做成图文、短视频，或者当作老客户复购的切入点。</div>
+      <div id="distBox"></div>
+    </div>
+
+    <div class="card">
+      <h2>④ 备份 / 恢复</h2>
+      <div class="ok">数据现在存在 Supabase 云端，和网站文件是分开的。<b>重新发布网站不会再覆盖任何密码和使用记录</b> —— 旧版本那个「一发布就丢密码、已用过的码还会被复活」的风险已经不存在了。</div>
+      <div class="hint" style="margin:0 0 4px">备份 / 恢复现在还留着两个用途：<b>①</b> 误删了密码想找回来；<b>②</b> 以后想把站点搬到别的 Supabase 项目。平时不做备份也不会丢数据。</div>
+      <div class="row">
+        <button id="bkDlBtn">下载完整备份 (.json)</button>
+        <button class="ghost" onclick="document.getElementById('bkFile').click()">选择备份文件…</button>
+        <input type="file" id="bkFile" accept=".json,application/json" style="display:none">
+        <select id="bkMode" style="padding:10px 12px;border:1.5px solid var(--line);border-radius:11px;font-size:13.5px;font-family:inherit;background:#fbfcfd">
+          <option value="merge">合并恢复（推荐，只补缺的、恢复已用状态）</option>
+          <option value="replace">覆盖恢复（用备份完全替换当前密码）</option>
+        </select>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink2);white-space:nowrap">
+          <input type="checkbox" id="bkCfg" checked style="width:auto"> 同时恢复站点配置
+        </label>
+        <button id="bkRestoreBtn">开始恢复</button>
+      </div>
+      <div class="hint" id="bkMsg"></div>
+    </div>
+
+    <div class="card">
+      <h2>⑤ 站点配置</h2>
+      <div class="grid wide">
+        <div><label>店铺名称（结果页 / 长图页脚 / 买不到时的搜索词）</label><input type="text" id="cfShop" placeholder="写小红书店铺的准确名字，买家会拿它去搜"></div>
+        <div><label>测评标题</label><input type="text" id="cfTitle"></div>
+        <div><label>客服微信（已停用，留空即可）</label><input type="text" id="cfKefu" placeholder="留空 · 买家在小红书订单里联系客服"></div>
+        <div><label>返现金额（元）</label><input type="text" id="cfCash"></div>
+        <div><label>获取密码的链接（推荐填写）</label><input type="text" id="cfBuyUrl" placeholder="商品链接 · 填了买家点按钮直接跳商品页"></div>
+        <div><label>获取密码的按钮文案</label><input type="text" id="cfBuyText" placeholder="还没有测试密码？到店铺下单后自动发货"></div>
+        <div><label>密码重复使用宽限（分钟）</label><input type="number" id="cfGrace" min="0" max="1440"></div>
+        <div><label>允许分享结果链接</label>
+          <select id="cfShare" style="width:100%;padding:11px 13px;border:1.5px solid var(--line);border-radius:11px;font-size:14px;font-family:inherit;background:#fbfcfd">
+            <option value="1">允许</option><option value="0">关闭</option>
+          </select></div>
+      </div>
+      <div class="row"><button id="saveCfgBtn">保存配置</button></div>
+      <div class="hint">「宽限分钟」设为 0 就是严格一次性；设成 5 表示同一个密码在 5 分钟内可以重复进入（防止用户刷新页面后状态丢失）。</div>
+    </div>
+
+    <div class="card">
+      <h2>⑥ 日常怎么用</h2>
+      <ol class="steps">
+        <li><b>发密码：</b>买家拍下后，在「密码列表」里挑一个「未使用」的密码复制发给他（或者导出 CSV 后统一发放）。</li>
+        <li><b>看进度：</b>「答题中」= 他已经输了密码、正在作答；「已完成」= 他已经拿到测评结果，这张码就彻底用掉了。</li>
+        <li><b>一个密码只能测一次：</b>买家测完后再点「再测一次」会被数据库拦住，并引导他联系客服拿新密码 —— 这是正常的，不用改。</li>
+        <li><b>买家想再测一次：</b>在列表里点这张码的「重置」，它会变回全新状态，让他再进一次就行。</li>
+        <li><b>买家说结果打不开了：</b>结果只保存在他自己那台设备上，换了手机或者清过浏览器数据就取不回来，同样用「重置」让他重测一遍。他当初复制出去的那条分享链接一直有效，如果还留着就能打开。</li>
+        <li><b>改客服号：</b>在「站点配置」里改完点保存，前端页面会立刻跟着变。</li>
+        <li><b>更新网站：</b>直接重新发布就行，数据在云端不会被覆盖（旧版那套「发布前先备份」的仪式已经不需要了）。</li>
+        <li><b>安全：</b>管理密钥和数据都只存在 Supabase 的库里，和网站文件完全分开 —— 就算网站文件被别人看到，也拿不到密码和管理密钥。</li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+<script src="config.js?v=20261026g1"></script>
+<script src="supa.js?v=20261012b"></script>
+<script src="data.js?v=20261012b"></script>
+<script>
+(function(){
+'use strict';
+var BE=window.SB;
+var KEY_STORE='ghost_admin_key';
+var KEY='';
+var STATE={codes:[],config:{},stats:{}};
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+var tt=null;
+function toast(m){var o=document.querySelector('.toast');if(o)o.parentNode.removeChild(o);
+ var d=document.createElement('div');d.className='toast';d.textContent=m;document.body.appendChild(d);
+ clearTimeout(tt);tt=setTimeout(function(){if(d.parentNode)d.parentNode.removeChild(d);},2200);}
+/* 后端调用：这些原来打给本机 Node 服务的 /api/admin/*，现在全部走 Supabase 的
+   数据库函数。管理密钥作为参数传给函数，在数据库内部完成校验，密钥本身不出库。 */
+var ADMIN_ROUTES={
+ '/api/admin/state':   function(){return BE.rpc('ghost_admin_state',{p_key:KEY});},
+ '/api/admin/generate':function(b){return BE.rpc('ghost_admin_generate',{p_key:KEY,p_count:b.count,p_prefix:b.prefix,p_batch:b.batch,p_note:b.note});},
+ '/api/admin/reset':   function(b){return BE.rpc('ghost_admin_reset',{p_key:KEY,p_code:b.code});},
+ '/api/admin/delete':  function(b){return BE.rpc('ghost_admin_delete',{p_key:KEY,p_codes:b.codes});},
+ '/api/admin/prune':   function(b){return BE.rpc('ghost_admin_prune',{p_key:KEY,p_what:b.what});},
+ '/api/admin/backup':  function(){return BE.rpc('ghost_admin_backup',{p_key:KEY});},
+ '/api/admin/restore': function(b){return BE.rpc('ghost_admin_restore',{p_key:KEY,p_mode:b.mode,p_backup:b.backup,p_apply_config:!!b.applyConfig});},
+ '/api/admin/config':  function(b){return BE.rpc('ghost_admin_set_config',{p_key:KEY,p_patch:b});}
+};
+function api(path,opts){opts=opts||{};
+ if(!BE||!BE.ready)return Promise.resolve({ok:false,message:'站点还没连上数据库，请检查 config.js。'});
+ var fn=ADMIN_ROUTES[path];
+ if(!fn)return Promise.resolve({ok:false,message:'未知接口 '+path});
+ return fn(opts.body||{});}
+function copy(s){if(navigator.clipboard&&window.isSecureContext)return navigator.clipboard.writeText(s).then(function(){return true;},function(){return lg(s);});return Promise.resolve(lg(s));}
+function lg(s){var t=document.createElement('textarea');t.value=s;t.style.cssText='position:fixed;left:-9999px';document.body.appendChild(t);t.select();
+ var ok=false;try{ok=document.execCommand('copy');}catch(e){}document.body.removeChild(t);return ok;}
+function fmt(t){if(!t)return '—';try{var d=new Date(t);var p=function(n){return n<10?'0'+n:''+n;};
+ return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes());}catch(e){return t;}}
+
+/* 登录 */
+function tryLogin(){
+ var v=($('keyInput').value||'').trim().toUpperCase();
+ if(!v){$('loginMsg').textContent='请输入管理密钥。';return;}
+ KEY=v;
+ /* 先给一句即时反馈：首次连数据库要过 DNS + TLS，慢网络下能到 2 秒，
+    没这句话店主点了会以为没反应，然后狂点。 */
+ $('loginMsg').textContent='正在验证…';
+ api('/api/admin/state').then(function(r){
+   if(r&&r.ok){try{localStorage.setItem(KEY_STORE,KEY);}catch(e){}
+     $('loginBox').classList.add('hide');$('mainBox').classList.remove('hide');apply(r);}
+   else{$('loginMsg').textContent=(r&&r.message)||'密钥不正确。';}
+ });
+}
+function apply(r){
+ STATE.codes=r.codes||[];STATE.config=r.config||{};STATE.stats=r.stats||STATE.stats||{};
+ $('stTotal').textContent=r.stats.total;$('stUsed').textContent=r.stats.used;$('stUnused').textContent=r.stats.unused;
+ $('stDone').textContent=(r.stats.done==null?0:r.stats.done);
+ var c=STATE.config;
+ $('cfShop').value=c.shopName||'';$('cfTitle').value=c.quizTitle||'';$('cfKefu').value=c.kefuWechat||'';
+ $('cfCash').value=c.cashback||'0.5';$('cfGrace').value=c.graceMinutes==null?5:c.graceMinutes;
+ $('cfBuyUrl').value=c.buyUrl||'';$('cfBuyText').value=c.buyText||'';
+ $('cfShare').value=(c.shareEnabled===false)?'0':'1';
+ renderTable();
+ renderDist();
+}
+
+/* 结果分布：告诉店主该重点做哪种内容 */
+function renderDist(){
+ var box=$('distBox');if(!box)return;
+ var t=(STATE.stats&&STATE.stats.types)||{};
+ var total=(STATE.stats&&STATE.stats.results)||0;
+ var keys=Object.keys(t).filter(function(k){return t[k]>0;})
+   .sort(function(a,b){return t[b]-t[a];});
+ if(!keys.length){box.innerHTML='<div class="hint" style="margin:0">还没有测评结果。等有买家测完之后，这里会显示各种累的占比。</div>';return;}
+ var max=t[keys[0]]||1,h='<div class="dist">';
+ keys.forEach(function(k){
+   var nm=(window.QD&&QD.DIMNAME&&QD.DIMNAME[k])||('未知 '+k);
+   var col=(window.QD&&QD.DIMCOLOR&&QD.DIMCOLOR[k])||'#8a929c';
+   var pct=total?Math.round(t[k]/total*100):0;
+   h+='<div class="distrow"><div class="distnm">'+esc(nm)+'</div>'
+     +'<div class="distbar"><i style="width:'+Math.max(2,Math.round(t[k]/max*100))+'%;background:'+col+'"></i></div>'
+     +'<div class="distn">'+t[k]+' 人 · '+pct+'%</div></div>';
+ });
+ h+='</div><div class="hint">共收到 '+total+' 份测评结果。'
+   +'（如果「重测」次数多，这里的总数会大于「已完成测试」的密码数。）</div>';
+ box.innerHTML=h;
+}
+function renderTable(){
+ var q=($('qInput').value||'').trim().toLowerCase();var f=$('fSelect').value;
+ var list=STATE.codes.filter(function(c){
+   if(f==='done'&&!c.resultAt)return false;
+   if(f==='used'&&!c.usedAt)return false;
+   if(f==='unused'&&c.usedAt)return false;
+   if(f==='perm'&&!c.unlimited)return false;
+   if(!q)return true;
+   return (c.code+' '+(c.batch||'')+' '+(c.note||'')).toLowerCase().indexOf(q)>=0;
+ });
+ var h='';
+ if(!list.length)h='<tr><td colspan="7" style="color:#7b848f;padding:18px">没有匹配的密码</td></tr>';
+ list.slice(0,800).forEach(function(c){
+   /* 永久密码永远显示「永久」，别让店主误当成没卖出的库存发给买家 */
+   var badge=c.unlimited
+     ?'<span class="badge" style="background:#fff4d6;color:#8a5a00;border-color:#f0d089">永久</span>'
+     :(c.resultAt?'<span class="badge d">已完成</span>':(c.usedAt?'<span class="badge u">答题中</span>':'<span class="badge f">未使用</span>'));
+   h+='<tr><td><code>'+esc(c.code)+'</code></td>'
+    +'<td>'+badge+'</td>'
+    +'<td>'+esc(c.batch||'—')+'</td><td>'+esc(c.note||'—')+'</td>'
+    +'<td>'+fmt(c.createdAt)+'</td>'
+    +'<td>'+fmt(c.usedAt)+(c.resultAt?'<br><span style="color:#1a56c4">完成 '+fmt(c.resultAt)+'</span>':'')+'</td>'
+    +'<td><button class="mini" data-act="copy" data-c="'+esc(c.code)+'">复制</button> '
+    +((c.usedAt||c.resultAt)?'<button class="mini g" data-act="reset" data-c="'+esc(c.code)+'">重置</button> ':'')
+    +'<button class="mini r" data-act="del" data-c="'+esc(c.code)+'">删除</button></td></tr>';
+ });
+ if(list.length>800)h+='<tr><td colspan="7" style="color:#7b848f;padding:14px">只显示前 800 条，请用搜索缩小范围</td></tr>';
+ $('tbody').innerHTML=h;
+}
+
+$('loginBtn').onclick=tryLogin;
+$('keyInput').onkeydown=function(e){if(e.key==='Enter')tryLogin();};
+
+$('genBtn').onclick=function(){
+ var n=parseInt($('genCount').value,10)||10;
+ api('/api/admin/generate',{method:'POST',body:{count:n,prefix:$('genPrefix').value,batch:$('genBatch').value,note:$('genNote').value}})
+  .then(function(r){
+   if(r&&r.ok){toast('已生成 '+r.count+' 个密码');refresh();}
+   else toast((r&&r.message)||'生成失败');
+ });
+};
+function refresh(){api('/api/admin/state').then(function(r){if(r&&r.ok)apply(r);});}
+$('refreshBtn').onclick=refresh;
+$('qInput').oninput=renderTable;
+$('fSelect').onchange=renderTable;
+
+$('tbody').onclick=function(e){
+ var b=e.target.closest?e.target.closest('button'):null;
+ if(!b)return;
+ var act=b.getAttribute('data-act'),code=b.getAttribute('data-c');
+ if(act==='copy'){copy(code).then(function(ok){toast(ok?'已复制 '+code:'请手动复制');});}
+ else if(act==='reset'){api('/api/admin/reset',{method:'POST',body:{code:code}}).then(function(r){
+   if(r&&r.ok){toast('已重置 '+code);refresh();}else toast('重置失败');});}
+ else if(act==='del'){
+   if(!confirm('确定删除 '+code+' 吗？删除后无法恢复。'))return;
+   api('/api/admin/delete',{method:'POST',body:{codes:[code]}}).then(function(r){
+     if(r&&r.ok){toast('已删除');refresh();}else toast('删除失败');});}
+};
+
+$('copyNewBtn').onclick=function(){
+ var unused=STATE.codes.filter(function(c){return !c.usedAt;}).map(function(c){return c.code;});
+ if(!unused.length)return toast('还没有可用的密码');
+ copy(unused.join('\n')).then(function(ok){toast(ok?('已复制 '+unused.length+' 个未使用密码'):'复制失败，请改用导出 CSV');});
+};
+$('csvBtn').onclick=function(){
+ var rows=[['密码','状态','批次','备注','生成时间','开始答题时间','完成时间']];
+ STATE.codes.forEach(function(c){
+   rows.push([c.code,
+     c.resultAt?'已完成':(c.usedAt?'答题中':'未使用'),
+     c.batch||'',c.note||'',fmt(c.createdAt),fmt(c.usedAt),fmt(c.resultAt)]);});
+ var csv='\ufeff'+rows.map(function(r){return r.map(function(x){return '"'+String(x).replace(/"/g,'""')+'"';}).join(',');}).join('\r\n');
+ var blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+ var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+ a.download='测试密码_'+new Date().toISOString().slice(0,10)+'.csv';
+ document.body.appendChild(a);a.click();setTimeout(function(){document.body.removeChild(a);},100);
+};
+$('pruneBtn').onclick=function(){
+ if(!confirm('确定删除所有「已使用」的密码记录吗？此操作不可恢复。'))return;
+ api('/api/admin/prune',{method:'POST',body:{what:'used'}}).then(function(r){
+   if(r&&r.ok){toast('已清理 '+r.removed+' 条');refresh();}else toast('操作失败');});
+};
+$('saveCfgBtn').onclick=function(){
+ api('/api/admin/config',{method:'POST',body:{
+   shopName:$('cfShop').value,quizTitle:$('cfTitle').value,kefuWechat:$('cfKefu').value,
+   cashback:$('cfCash').value,graceMinutes:parseInt($('cfGrace').value,10)||0,shareEnabled:$('cfShare').value==='1',
+   buyUrl:$('cfBuyUrl').value,buyText:$('cfBuyText').value
+ }}).then(function(r){if(r&&r.ok){toast('配置已保存');refresh();}else toast((r&&r.message)||'保存失败');});
+};
+
+/* 备份 / 恢复 */
+var bkData=null;
+$('bkDlBtn').onclick=function(){
+  api('/api/admin/backup').then(function(r){
+    if(!(r&&r.ok))return toast('获取备份失败');
+    bkData=r;
+    var blob=new Blob([JSON.stringify(r,null,2)],{type:'application/json'});
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+    var d=new Date();var p=function(n){return n<10?'0'+n:''+n;};
+    a.download='测评密码备份_'+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'_'+p(d.getHours())+p(d.getMinutes())+'.json';
+    document.body.appendChild(a);a.click();setTimeout(function(){document.body.removeChild(a);},100);
+    $('bkMsg').textContent='备份已下载：'+r.codes.length+' 个密码（其中 '+(r.codes.filter(function(c){return c.usedAt;}).length)+' 个已使用）。请存到电脑里。';
+  });
+};
+$('bkFile').onchange=function(){
+  var f=this.files&&this.files[0];if(!f)return;
+  var fr=new FileReader();
+  fr.onload=function(){
+    try{
+      var j=JSON.parse(fr.result);
+      if(!j||!Array.isArray(j.codes))return toast('这个文件不是本站导出的备份');
+      bkData=j;
+      var used=j.codes.filter(function(c){return c.usedAt;}).length;
+      $('bkMsg').textContent='已读取备份：'+j.codes.length+' 个密码（'+used+' 个已使用），导出于 '+(j.exportedAt||'未知时间').replace('T',' ').slice(0,16)+'。确认无误后点「开始恢复」。';
+    }catch(e){toast('文件解析失败');}
+  };
+  fr.readAsText(f);
+  this.value='';
+};
+$('bkRestoreBtn').onclick=function(){
+  if(!bkData)return toast('请先下载备份或选择备份文件');
+  var mode=$('bkMode').value;
+  var tip = mode==='replace'
+    ? '「覆盖恢复」会用备份里的密码完全替换当前所有密码，现在线上新增的密码会丢。确定继续吗？'
+    : '「合并恢复」只补上备份里有而线上没有的密码，并恢复使用状态。确定继续吗？';
+  if(!confirm(tip))return;
+  api('/api/admin/restore',{method:'POST',body:{mode:mode,backup:bkData,applyConfig:$('bkCfg').checked}})
+   .then(function(r){
+     if(r&&r.ok){
+       $('bkMsg').textContent='恢复完成：新增 '+r.added+' 个、更新已用状态 '+r.updated+' 个，当前共 '+r.total+' 个（已用 '+r.used+'）。'+(r.configApplied?'站点配置已一并恢复。':'');
+       refresh();
+     } else toast((r&&r.message)||'恢复失败');
+   });
+};
+
+/* 自动登录 */
+try{var k=localStorage.getItem(KEY_STORE);if(k){$('keyInput').value=k;tryLogin();}}catch(e){}
+})();
+</script>
+</body>
+</html>
