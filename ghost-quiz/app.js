@@ -709,6 +709,11 @@
     h += '<div class="disc">' + esc(QD.DISCLAIMER).replace(/\n/g, '<br>') + '</div>';
 
     if (mode === 'own') {
+      /* 这一款不返现，好评只能靠一句零成本的话去要。
+         放在「再测一次 / 换个人测」那排按钮**上面** —— 那是他看完结果后
+         情绪最高的一点，顺手就去点好评了。 */
+      h += '<div class="praiseline">说中了的话，回去给个好评吧 —— 那是我继续做下去的理由。</div>';
+
       /* 免卡密版用的是通用口令（库里 unlimited），不受「一码一次」限制 ——
          「再测一次」一直摆着，点了就能重开一轮，这是这一版对买家的好处之一。
          （带密码那套会在交卷后把这个按钮藏掉，那边一张码只能完整测一次。） */
@@ -809,13 +814,14 @@
        理由站得住：站点挂在境外域名上，微信里点开常常一句「链接打不开」，
        而朋友那边打不开，账会算到店主头上。分享这一环改成只走长图 ——
        图不受域名限制，发到哪都能看。 */
+    /* 2026-10-26：万圣节款取消好评返现，所以「好评有礼」这个入口整个撤掉。
+       要好评改成结果页底部一句零成本的话（见 renderResult 里的 praiseline）——
+       承诺了返现又做不到是最伤的，不如一开始就不要。 */
     bar.innerHTML = '<div class="inner">'
       + '<button class="btn" id="saveBtn">保存长图</button>'
-      + '<button class="btn gold" id="praiseBtn">好评有礼</button>'
       + '</div>';
     bar.classList.remove('hide');
     $('saveBtn').onclick = saveImage;
-    $('praiseBtn').onclick = openPraise;
   }
 
   /* 再测一次：能不能再开一轮由服务端说了算（一个密码只完整测试一次） */
@@ -1312,7 +1318,8 @@
     }
   }
 
-  /* 好评有礼 */
+  /* 好评有礼 —— 万圣节款取消返现后**暂时不用**（入口已撤，见 afterResult）。
+     留着没删：哪天想重新开返现，把 renderActbar 里那个按钮加回来就能直接用。 */
   function openPraise() {
     var cb = CFG.cashback || '1';
     /* 同上：不发微信号，只给小红书里的找人路径 */
