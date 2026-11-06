@@ -288,7 +288,7 @@
     if (v) {
       v.innerHTML =
         '<div class="brand">' + esc(CFG.shopName || '旧友意难平自测') + '</div>'
-        + '<h1>' + esc(CFG.quizTitle || '你是《后会友期》里的谁？') + '</h1>'
+        + '<h1>' + esc(CFG.quizTitle || '你是后会友期中的谁？') + '</h1>'
         + '<p class="lead">正在打开小红书商品页…</p>'
         + '<a class="btn gold" style="text-decoration:none;display:block;text-align:center;max-width:320px;margin:18px auto 0"'
         + ' href="' + esc(CFG.buyUrl) + '" rel="noopener">'
@@ -374,7 +374,7 @@
     $('actbar').classList.add('hide');
     $('view-gate').innerHTML =
       '<div class="brand">' + esc(CFG.shopName || '旧友意难平自测') + '</div>'
-      + '<h1>' + esc(CFG.quizTitle || '你是《后会友期》里的谁？') + '</h1>'
+      + '<h1>' + esc(CFG.quizTitle || '你是后会友期中的谁？') + '</h1>'
       + '<p class="lead">每段走散的友情里，都藏着一个没说完的故事。<br>12 道题，看看你的那一段，最像谁。</p>'
       + (fromQR() ? qrChipHTML() : '')
       + '<div class="facts"><span class="fact">12 道题 · 约 2 分钟</span><span class="fact">8 位旧友 · 6 个观察室座位</span><span class="fact">附送翻篇的第一步</span></div>'
@@ -497,12 +497,12 @@
     }
     $('view-landing').innerHTML =
       '<div class="brand">' + esc(CFG.shopName || '旧友意难平自测') + '</div>'
-      + '<h1>' + esc(CFG.quizTitle || '你是《后会友期》里的谁？') + '</h1>'
+      + '<h1>' + esc(CFG.quizTitle || '你是后会友期中的谁？') + '</h1>'
       + '<p class="lead">每段走散的友情里，都藏着一个没说完的故事。<br>12 道题，看看你的那一段，最像谁。</p>'
       + '<div class="facts"><span class="fact">12 道题 · 约 2 分钟</span><span class="fact">8 位旧友 · 6 个观察室座位</span><span class="fact">附送翻篇的第一步</span></div>'
       + '<div class="box">'
       + '<p><b>怎么作答：</b>不用想太久，凭第一反应选最像你的那个场景。没有对错，也没有「应该」的答案。答完可以返回上一题改选。</p>'
-      + '<p><b>你会得到：</b>你最像的那位旧友、一张旧友成分图、你在观察室的座位、三条今天就能做的事。结果可以存成一张长图带走。</p>'
+      + '<p><b>你会得到：</b>你最像的那位旧友、一句TA口吻的自白、一张旧友成分图、你在观察室的座位、三条今天就能做的事。结果可以存成一张长图带走。</p>'
       + '</div>'
       + '<button class="btn" id="startBtn">开始测试</button>'
       + '<div class="msg ok" style="text-align:center">口令已验证 · 点上面开始，测完还能再测</div>';
@@ -663,6 +663,13 @@
     h += '<div class="rlab">' + (mode === 'shared' ? 'TA 最像' : '你最像') + '</div>';
     h += '<div class="rname" style="color:' + an.color + '">' + esc(an.title) + '</div>';
     h += '<div class="rsub">' + esc(T.name) + '｜' + esc(T.sub) + '｜' + esc(T.en) + '</div>';
+    /* 一句话总结：结果页最醒目的一行 —— 嘉宾口吻的自白，直接可截图转发。
+       「我画地为牢啊 厉娜」这种句子是整页传播率最高的东西，放在名字正下方。 */
+    if (T.line) {
+      h += '<div class="rline"><i class="rlq" style="color:' + an.color + '">「</i>'
+        + '<span class="rlt" style="color:' + an.color + '">' + esc(T.line) + '</span>'
+        + '<i class="rlq" style="color:' + an.color + '">」</i></div>';
+    }
     h += QZ.drawRadarSVG(an.scores);
     /* 图例 */
     h += '<div class="legend">';
@@ -1473,7 +1480,7 @@
     if (v) {
       v.innerHTML =
         '<div class="brand">' + esc(CFG.shopName || '旧友意难平自测') + '</div>'
-        + '<h1>' + esc(CFG.quizTitle || '你是《后会友期》里的谁？') + '</h1>'
+        + '<h1>' + esc(CFG.quizTitle || '你是后会友期中的谁？') + '</h1>'
         + '<p class="lead">正在进入测试…</p>'
         + (failMsg ? '<div class="msg err" style="margin:16px 0 0">' + esc(failMsg) + '</div>' : '')
         + '<div class="box" style="margin-top:16px"><p>如果这个页面一直停在这里，'

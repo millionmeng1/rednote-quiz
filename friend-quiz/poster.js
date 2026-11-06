@@ -42,6 +42,8 @@
       + '<div class="plab">我最像</div>'
       + '<div class="pname">' + esc(an.title) + '</div>'
       + '<div class="psub">' + esc(T.name) + '｜' + esc(T.sub) + '<br>' + esc(T.en) + '</div>'
+      /* 一句话总结：长图上第二行就带它 —— 朋友圈里能青住的就这半句 */
+      + (T.line ? '<div class="pline">「' + esc(T.line) + '」</div>' : '')
       + '<div class="pflag">意难平 · ' + esc(an.band) + '</div>'
       + '</div>';
 
@@ -104,7 +106,7 @@
        （那需要先在后台填上 buyUrl，否则会退回指向本站）。 */
     var direct = String(window.POSTER_QR || 'test').toLowerCase() === 'buy' && !!cfg.buyUrl;
     html += '<div class="pfoot">'
-      + '<div class="f1">' + esc(cfg.quizTitle || '你是《后会友期》里的谁？') + '</div>'
+      + '<div class="f1">' + esc(cfg.quizTitle || '你是后会友期中的谁？') + '</div>'
       + '<div class="f2">出自「' + esc(cfg.shopName || '') + '」<br>12 题 · 8 位旧友 · 48 种组合</div>'
       + '<div class="pqr">'
       + '<canvas id="p-qr" class="pqrc"></canvas>'

@@ -12,6 +12,7 @@
 #poster .plab{font-size:23px;letter-spacing:.2em;opacity:.85;margin-bottom:12px}
 #poster .pname{font-size:58px;font-weight:700;letter-spacing:-1px;line-height:1.22}
 #poster .psub{font-size:22px;opacity:.9;margin-top:16px;line-height:1.6}
+#poster .pline{margin-top:20px;font-size:34px;font-weight:800;line-height:1.5;letter-spacing:.02em}
 #poster .pflag{display:inline-block;margin-top:22px;border:1.5px solid rgba(255,255,255,.55);border-radius:999px;padding:7px 22px;font-size:20px}
 
 /* 卡片 */
