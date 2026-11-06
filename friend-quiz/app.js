@@ -656,7 +656,9 @@
        两张方图各带自己的渐变底，叠在一起像贴了两张照片，很脏。
        图案本身是不透明方图，所以按圆形裁切（object-fit:cover），
        顺带把右下角的生成水印裁出圆外。 */
-    if (T.emoji) {
+    if (T.img) {
+      h += '<div class="rghost"><div class="gwrap"><img class="gavatar" src="' + esc(T.img) + '" alt=""></div></div>';
+    } else if (T.emoji) {
       h += '<div class="rghost"><div class="gwrap"><span class="gmemoji" style="background:linear-gradient(135deg,'
         + an.color + '2e,' + an.color + '0f)">' + T.emoji + '</span></div></div>';
     }

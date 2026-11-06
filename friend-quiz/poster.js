@@ -38,7 +38,8 @@
       + '<div class="pbrand">' + esc(cfg.shopName || '旧友意难平自测') + '</div>'
       /* 这张鬼图是长图能不能被转发出去的关键：纯文字没人愿意发朋友圈。
          图案自带渐变底，所以圆裁 —— 和结果页保持同一个视觉语言。 */
-      + (T.emoji ? '<div class="pghost"><span class="pemoji">' + T.emoji + '</span></div>' : '')
+      + (T.img ? '<div class="pghost"><img class="pavatar" src="' + esc(T.img) + '" alt=""></div>'
+        : (T.emoji ? '<div class="pghost"><span class="pemoji">' + T.emoji + '</span></div>' : ''))
       + '<div class="plab">我最像</div>'
       + '<div class="pname">' + esc(an.title) + '</div>'
       + '<div class="psub">' + esc(T.name) + '｜' + esc(T.sub) + '<br>' + esc(T.en) + '</div>'
@@ -247,7 +248,7 @@
         var im = new Image();
         im.onload = function () { res(); };
         im.onerror = function () { res(); };
-        im.src = 'data:' + (an.T.emoji || '');
+        im.src = an.T.img;
       });
     };
 

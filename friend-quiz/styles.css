@@ -80,13 +80,18 @@ h1{font-size:26px;line-height:1.38;margin:0 0 12px;letter-spacing:-.5px}
 .qfoot .btn{margin-top:0;flex:1}
 
 /* ================= 结果页 ================= */
-/* 主视觉：大号 emoji 放在带色的圆卡里。
-   不用嘉宾真人图：一是肖像权，二是节目截图的版权 —— 卖钱的商品图一个都不能碰。
-   emoji + 渐变圆底反而和整个站的“文字感”更统一。 */
+/* 主视觉：每位旧友一张卡通头像，放在带色圆卡里。
+   **必须是原创角色图，不是嘉宾真人** —— 真人肖像和节目截图都不能上付费商品；
+   所以头像只借“性别 + 道具 + 神态”来区分（行李箱、账本、游戏手柄），画的是类型不是本人。
+   没有 img 的旧数据会退回 emoji + 渐变圆底。 */
 .rghost{display:flex;justify-content:center;margin:2px 0 16px}
 .rghost .gwrap{width:168px;height:168px;border-radius:50%;display:flex;align-items:center;justify-content:center;
   box-shadow:0 10px 22px rgba(45,35,110,.18), 0 0 0 4px #fff, 0 0 0 5.5px rgba(122,90,248,.20)}
 .rghost .gmemoji{font-size:86px;line-height:1;display:block}
+/* 卡通头像：原创角色图，不是嘉宾真人 —— 真人肖像和节目截图都不能上付费商品。
+   图已经是 340px 的圆形透明 PNG（制作时放大 1.16 把生成水印推出了圆外），
+   所以这里只需铺满圆容器，不用再裁。 */
+.rghost .gavatar{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
 @media (max-width:360px){
   .rghost .gwrap{width:138px;height:138px}
 }
