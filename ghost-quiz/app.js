@@ -443,6 +443,9 @@
           }, 320);
           return;
         }
+        /* 手动输口令进来、这台设备 7 天内测过、但本机没缓存（换浏览器了）——
+           服务端按设备指纹把那份结果还回来，别让他重做一遍。 */
+        if (!readResult() && r.lastShare) { showShared(r.lastShare, true, true); return; }
         try { localStorage.removeItem(K_RESULT); } catch (e) { }
         msg.className = 'msg ok'; msg.textContent = '验证通过，正在进入…';
         /* 重新输一次密码进来的人，前端此刻还不知道这张码出没出过结果 —— 问一次服务端。
@@ -1056,7 +1059,10 @@
   /* 「这份结果」的网址 —— 带 ?r= 分享码，打开就是这一份答案，
      所以换到别的浏览器打开也不用重新答 18 道题。 */
   function ownResultUrl() {
-    return location.origin + location.pathname + '?r=' + encodeURIComponent(S.share || '') + '&own=1';
+    /* k= 必须带上：这个网址是要被甩到**另一个浏览器**里打开的，那边没有 token，
+       想「再测一次」或回头再点订单链接，全靠 k 进门。
+       2026-11-07 之前这里只有 ?r=，跳过去的结果页「再测一次」是坏的。 */
+    return location.origin + urlWithResult(S.share || '');
   }
 
   /* 分享码是随结果一起生成的；万一点保存时还没生成好（网络慢），这里补一次 */
@@ -1167,6 +1173,10 @@
     ensureShare().then(function (share) {
       if (!share) { hideLoading(); showBrowserGuide(''); return; }
       var url = ownResultUrl();
+      /* 先把 ?r= 写进地址栏再跳：万一自动跳没成功、买家改用右上角
+         「··· → 在浏览器打开」，系统带过去的是**地址栏当前这个地址**。
+         不写的话，过去就是一个「开始测试」—— 等于白跳，还得重做一遍。 */
+      setResultUrl();
       tryOpenExternal(url, function () { hideLoading(); showBrowserGuide(url); });
     });
   }
@@ -1489,8 +1499,11 @@
         if (saved) { showSavedResult(saved); return; }
         /* 这台设备上次测过，但本机缓存没了 —— 换浏览器 / 换 App 打开订单链接
            就是这种情况。服务端按设备指纹记着那份结果，直接还给他，
-           别让他再答一遍 18 道题。（服务端没开这条功能时 lastShare 为空，照旧进首页） */
-        if (!S.unlimited && r.lastShare) { showShared(r.lastShare, true, true); return; }
+           别让他再答一遍。（服务端没开这条功能时 lastShare 为空，照旧进首页）
+           ★ 免密站所有买家共用永久口令（unlimited），这条找回对永久口令同样生效。
+           2026-11-07 之前这里把 unlimited 排除在外，正是「安卓存长图 → 跳浏览器
+           打开 → 让他重做题」那个 bug 的根因。 */
+        if (r.lastShare) { showShared(r.lastShare, true, true); return; }
         showLanding();
         return;
       }
@@ -1568,6 +1581,10 @@
       if (h === 'result' && saved) { showSavedResult(saved); return; }
       if (h === 'quiz') { startQuiz(); return; }
       if (h === 'result') { history.replaceState(null, '', '#/'); }
+      /* 有 token 但本机缓存没了（清过浏览器数据 / 换过浏览器）：带口令进来就
+         再走一次 redeem，让服务端按设备指纹把结果还回来（④号 SQL 后永久口令也认）。
+         lastShare 为空时 redeem 照样落到 showLanding，不会死循环。 */
+      if (S.unlimited && codeFromUrl()) { autoEnter(codeFromUrl()); return; }
       showLanding();
     });
   }
